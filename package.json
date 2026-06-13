@@ -1,8 +1,8 @@
 {
-  "name": "proyecto-planeta",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "incendios-cordoba",
+  "version": "2.0.0",
+  "description": "Monitor de incendios de Córdoba — focos de calor NASA FIRMS y vientos sobre un globo 3D CesiumJS",
+  "main": "index.html",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
     },

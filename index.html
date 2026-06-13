@@ -10,7 +10,7 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sismógrafo Global</title>
+  <title>Incendios Córdoba</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://unpkg.com/cesium@1.120.0/Build/Cesium/Widgets/widgets.css">
 </head>
@@ -24,64 +24,49 @@
     <div class="hud-corner tr"></div>
     <div class="hud-corner bl"></div>
     <div class="hud-corner br"></div>
-    <div id="hud-readout">SEISMIC ARRAY · USGS · OPEN-METEO · EN LÍNEA</div>
+    <div id="hud-readout">INCENDIOS CÓRDOBA · NASA FIRMS · OPEN-METEO · EN LÍNEA</div>
   </div>
 
   <!-- Panel de control -->
   <div id="panel">
     <div id="panel-header">
-      <span id="panel-title">Seismic Array</span>
+      <span id="panel-title">Incendios Córdoba</span>
       <button id="panel-toggle" title="Ocultar panel">✕</button>
     </div>
 
     <div id="panel-body">
 
       <details open>
-        <summary>Sismos</summary>
+        <summary>Focos de incendio</summary>
         <div class="control-group">
-          <label>Magnitud mínima <strong id="mag-val">2.5</strong></label>
-          <input type="range" id="mag-min" min="0" max="9" step="0.5" value="2.5">
-          <div class="range-labels"><span>0</span><span>9</span></div>
+          <div class="alert-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="fire-toggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <small id="fire-status">Inactivo</small>
+          </div>
         </div>
         <div class="control-group">
           <label>Período</label>
           <div class="btn-group">
             <button class="period-btn" data-days="1">24 h</button>
-            <button class="period-btn active" data-days="7">7 días</button>
-            <button class="period-btn" data-days="30">30 días</button>
-            <button class="period-btn" data-days="custom">Personalizado</button>
+            <button class="period-btn active" data-days="3">3 días</button>
+            <button class="period-btn" data-days="7">7 días</button>
+            <button class="period-btn" data-days="10">10 días</button>
           </div>
         </div>
-        <div class="control-group" id="custom-dates">
-          <label>Desde</label>
-          <input type="date" id="date-from">
-          <label>Hasta</label>
-          <input type="date" id="date-to">
+        <div id="fire-legend">
+          <div class="leyenda-item"><span class="dot" style="background:#ffdd00"></span> Foco débil &lt; 5 MW</div>
+          <div class="leyenda-item"><span class="dot" style="background:#ff9900"></span> 5 – 20 MW</div>
+          <div class="leyenda-item"><span class="dot" style="background:#ff5500"></span> 20 – 50 MW</div>
+          <div class="leyenda-item"><span class="dot" style="background:#ff1111"></span> Foco intenso &gt; 50 MW</div>
         </div>
-        <button id="apply-btn">Buscar sismos</button>
-        <div id="stats">
-          <div id="loading-msg">Cargando...</div>
-          <div id="count-msg"><span id="count">0</span> sismos encontrados</div>
-        </div>
+        <small class="risk-disclaimer">Focos de calor VIIRS · NASA FIRMS · tiempo casi real · pasá el mouse sobre un punto para ver detalle</small>
       </details>
 
       <details>
-        <summary>Alertas en tiempo real</summary>
-        <div class="control-group">
-          <div class="alert-row">
-            <label class="toggle-switch">
-              <input type="checkbox" id="alert-toggle">
-              <span class="toggle-slider"></span>
-            </label>
-            <span>Avisar si M ≥</span>
-            <input type="number" id="alert-mag" value="5" min="1" max="9" step="0.5">
-          </div>
-          <small id="alert-status">Inactivo</small>
-        </div>
-      </details>
-
-      <details>
-        <summary>Vientos globales</summary>
+        <summary>Vientos (propagación)</summary>
         <div class="control-group">
           <div class="alert-row">
             <label class="toggle-switch">
@@ -97,48 +82,14 @@
             <div class="leyenda-item"><span class="dot" style="background:#ff6600"></span> 20 – 30 m/s</div>
             <div class="leyenda-item"><span class="dot" style="background:#ff2222"></span> &gt; 30 m/s</div>
           </div>
+          <small class="risk-disclaimer">Viento a 10 m · Open-Meteo · el fuego avanza con el viento</small>
         </div>
       </details>
 
       <details>
-        <summary>Incendios Córdoba</summary>
+        <summary>Vista</summary>
         <div class="control-group">
-          <div class="alert-row">
-            <label class="toggle-switch">
-              <input type="checkbox" id="fire-toggle">
-              <span class="toggle-slider"></span>
-            </label>
-            <small id="fire-status">Inactivo</small>
-          </div>
-          <div id="fire-legend">
-            <div class="leyenda-item"><span class="dot" style="background:#ffdd00"></span> Foco débil &lt; 5 MW</div>
-            <div class="leyenda-item"><span class="dot" style="background:#ff9900"></span> 5 – 20 MW</div>
-            <div class="leyenda-item"><span class="dot" style="background:#ff5500"></span> 20 – 50 MW</div>
-            <div class="leyenda-item"><span class="dot" style="background:#ff1111"></span> Foco intenso &gt; 50 MW</div>
-          </div>
-          <small class="risk-disclaimer">Focos de calor VIIRS · NASA FIRMS · tiempo casi real</small>
-        </div>
-      </details>
-
-      <details>
-        <summary>Riesgo sísmico · IA</summary>
-        <div class="control-group">
-          <div class="alert-row">
-            <label class="toggle-switch">
-              <input type="checkbox" id="risk-toggle">
-              <span class="toggle-slider"></span>
-            </label>
-            <small id="risk-status">Inactivo</small>
-          </div>
-          <div id="risk-legend">
-            <div class="leyenda-item"><span class="dot" style="background:#003311"></span> Bajo &lt; 15%</div>
-            <div class="leyenda-item"><span class="dot" style="background:#66cc00"></span> Leve 15–30%</div>
-            <div class="leyenda-item"><span class="dot" style="background:#ffdd00"></span> Moderado 30–50%</div>
-            <div class="leyenda-item"><span class="dot" style="background:#ff7700"></span> Alto 50–70%</div>
-            <div class="leyenda-item"><span class="dot" style="background:#ff1111"></span> Crítico &gt; 70%</div>
-          </div>
-          <div id="risk-top-zones"></div>
-          <small class="risk-disclaimer">P(M≥5.0 próximos 7 días) · estimación probabilística</small>
+          <button id="center-btn">Centrar en Córdoba</button>
         </div>
       </details>
 
@@ -156,27 +107,18 @@
     <button id="panel-btn-mob"  title="Panel">☰</button>
   </div>
 
-  <!-- Notificación de alerta -->
-  <div id="alert-notif">
-    <div id="alert-content">
-      <strong id="alert-title"></strong>
-      <p id="alert-body"></p>
-    </div>
-    <button id="alert-close">✕</button>
-  </div>
-
   <!-- Leyenda -->
   <div id="leyenda">
-    <div class="leyenda-titulo">Magnitud</div>
-    <div class="leyenda-item"><span class="dot" style="background:#00ff88"></span> &lt; 2.5</div>
-    <div class="leyenda-item"><span class="dot" style="background:#ffdd00"></span> 2.5 – 4.5</div>
-    <div class="leyenda-item"><span class="dot" style="background:#ff6600"></span> 4.5 – 6.0</div>
-    <div class="leyenda-item"><span class="dot" style="background:#ff1111"></span> &gt; 6.0</div>
-    <div class="leyenda-footer">Fuente: USGS · Hover para info</div>
+    <div class="leyenda-titulo">Focos de calor (FRP)</div>
+    <div class="leyenda-item"><span class="dot" style="background:#ffdd00"></span> &lt; 5 MW</div>
+    <div class="leyenda-item"><span class="dot" style="background:#ff9900"></span> 5 – 20 MW</div>
+    <div class="leyenda-item"><span class="dot" style="background:#ff5500"></span> 20 – 50 MW</div>
+    <div class="leyenda-item"><span class="dot" style="background:#ff1111"></span> &gt; 50 MW</div>
+    <div class="leyenda-footer">Fuente: NASA FIRMS · VIIRS</div>
   </div>
 
-  <!-- Tooltip terremoto -->
-  <div id="eq-info"></div>
+  <!-- Tooltip de foco -->
+  <div id="fire-info"></div>
 
   <!-- Atribución de tiles -->
   <div id="map-attr">

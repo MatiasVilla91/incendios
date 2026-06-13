@@ -248,7 +248,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* Botón aplicar */
-#apply-btn {
+#apply-btn, #center-btn {
   width: 100%;
   padding: 10px;
   background: rgba(0, 255, 68, 0.07);
@@ -263,7 +263,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-transform: uppercase;
   transition: all 0.2s;
 }
-#apply-btn:hover {
+#apply-btn:hover, #center-btn:hover {
   background: rgba(0, 255, 68, 0.14);
   box-shadow: 0 0 14px rgba(0, 255, 68, 0.18);
   text-shadow: 0 0 6px #00ff88;
@@ -427,7 +427,7 @@ hr { border: none; border-top: 1px solid rgba(0, 255, 68, 0.07); }
 .leyenda-footer { margin-top: 10px; font-size: 9px; opacity: 0.25; letter-spacing: 0.5px; }
 
 /* ── Tooltip terremoto ── */
-#eq-info {
+#fire-info {
   position: fixed;
   display: none;
   background: rgba(0, 5, 2, 0.96);
@@ -536,7 +536,7 @@ details > #stats { margin-top: 4px; }
   #leyenda { display: none; }
 
   /* Tooltip fijo abajo en mobile (no hay cursor) */
-  #eq-info {
+  #fire-info {
     left: 50% !important;
     top: auto !important;
     bottom: 90px;
@@ -552,7 +552,7 @@ details > #stats { margin-top: 4px; }
   .toggle-switch { width: 42px; height: 24px; }
   .toggle-slider::before { width: 18px; height: 18px; }
   input[type="range"] { height: 36px; }
-  .btn-group button, #apply-btn { min-height: 40px; }
+  .btn-group button, #apply-btn, #center-btn { min-height: 40px; }
 }
 
 /* En desktop, ocultar el botón ☰ del bottom-controls */
