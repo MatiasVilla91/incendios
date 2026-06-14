@@ -1,0 +1,5 @@
+node_modules/
+
+# Archivos generados por el pipeline GEE — regenerar localmente con fire_scars_pipeline.py
+data/
+incendios_historico.geojson

@@ -262,7 +262,7 @@ def export_local(year: int, fc: ee.FeatureCollection, out_path: Path) -> list:
     out_path.write_text(
         json.dumps(geojson_out, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    print(f"  ✓ {len(all_features)} polígonos → {out_path}")
+    print(f"  OK {len(all_features)} poligonos -> {out_path}")
     return all_features
 
 
@@ -348,7 +348,7 @@ ejemplos:
     all_features: list = []
 
     for year in years:
-        print(f"── {year} {'─' * 40}")
+        print(f"-- {year} {'-' * 40}")
         try:
             fc = build_year_fc(year, region)
         except Exception as exc:
