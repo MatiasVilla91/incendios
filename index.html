@@ -185,6 +185,45 @@
       </details>
 
       <details>
+        <summary>Desarrollo urbano (OSM)</summary>
+        <div class="control-group">
+          <div class="alert-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="osm-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+            <small id="osm-status">Inactivo</small>
+          </div>
+        </div>
+        <div id="osm-legend" style="display:none;margin-top:6px">
+          <div class="leyenda-item"><span class="dot" style="background:#c084fc"></span> Urbanización / barrio privado</div>
+          <div class="leyenda-item"><span class="dot" style="background:#a855f7"></span> Campo de golf / resort</div>
+          <div class="leyenda-item"><span class="dot" style="background:#7c3aed"></span> Comercial / industrial</div>
+        </div>
+        <div id="coincidencias-osm-list" style="display:flex;flex-direction:column;gap:4px;margin-top:8px"></div>
+        <small class="risk-disclaimer">OpenStreetMap · desarrollo urbano actual sobre suelo de Córdoba · clic para ver detalle</small>
+      </details>
+
+      <details>
+        <summary>Loteos municipales</summary>
+        <div class="control-group">
+          <div class="alert-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="loteos-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+            <small id="loteos-status">Inactivo</small>
+          </div>
+        </div>
+        <div id="loteos-legend" style="display:none;margin-top:6px">
+          <div class="leyenda-item"><span class="dot" style="background:#22d3ee"></span> Loteo aprobado</div>
+          <div class="leyenda-item"><span class="dot" style="background:#0891b2"></span> Loteo autorizado</div>
+        </div>
+        <div id="coincidencias-list" style="display:flex;flex-direction:column;gap:4px;margin-top:8px"></div>
+        <small class="risk-disclaimer">Loteos municipales IDECOR · clic en una cicatriz para ver si tiene loteo superpuesto</small>
+      </details>
+
+      <details>
         <summary>Vista</summary>
         <div class="control-group">
           <button id="center-btn">Centrar en Córdoba</button>
@@ -223,6 +262,12 @@
 
   <!-- Tooltip de departamento (hover) -->
   <div id="dept-info"></div>
+
+  <!-- Tooltip de loteo (clic) -->
+  <div id="loteo-info"></div>
+
+  <!-- Tooltip de feature OSM (clic) -->
+  <div id="osm-info"></div>
 
   <!-- Divisor temporal Wayback -->
   <div id="split-line">

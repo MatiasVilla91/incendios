@@ -284,6 +284,34 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 #apply-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
+.coincidencia-btn {
+  width: 100%;
+  padding: 6px 8px;
+  background: rgba(34,211,238,0.08);
+  border: 1px solid rgba(34,211,238,0.25);
+  color: #22d3ee;
+  cursor: pointer;
+  border-radius: var(--radius);
+  font-size: 11px;
+  font-family: var(--font);
+  text-align: left;
+  line-height: 1.4;
+  transition: all 0.15s;
+}
+.coincidencia-btn:hover {
+  background: rgba(34,211,238,0.15);
+  border-color: rgba(34,211,238,0.45);
+}
+.coincidencia-btn.osm {
+  background: rgba(192,132,252,0.08);
+  border-color: rgba(192,132,252,0.25);
+  color: #c084fc;
+}
+.coincidencia-btn.osm:hover {
+  background: rgba(192,132,252,0.15);
+  border-color: rgba(192,132,252,0.45);
+}
+
 /* Stats */
 #stats { font-size: 11px; min-height: 16px; color: var(--text-secondary); }
 #loading-msg { color: var(--text-muted); display: none; }
@@ -329,7 +357,7 @@ hr { border: none; border-top: 1px solid var(--border); }
 
 /* ── Status labels ── */
 #alert-status, #wind-status, #risk-status,
-#wayback-status, #scar-status, #otbn-status, #divpol-status {
+#wayback-status, #scar-status, #otbn-status, #divpol-status, #loteos-status, #osm-status {
   font-size: 11px;
   color: var(--text-muted);
   font-weight: 400;
@@ -478,6 +506,44 @@ hr { border: none; border-top: 1px solid var(--border); }
   z-index: 55;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+
+/* ── Tooltip de feature OSM ── */
+#osm-info {
+  position: fixed;
+  display: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-mid);
+  border-left: 3px solid #c084fc;
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  pointer-events: none;
+  max-width: 260px;
+  line-height: 1.6;
+  z-index: 50;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+/* ── Tooltip de loteo ── */
+#loteo-info {
+  position: fixed;
+  display: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-mid);
+  border-left: 3px solid #22d3ee;
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  pointer-events: none;
+  max-width: 260px;
+  line-height: 1.6;
+  z-index: 50;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
 
 /* ── Atribución ── */
@@ -634,7 +700,7 @@ details > #stats { margin-top: 4px; }
   #bottom-controls button { width: 44px; height: 44px; font-size: 18px; }
   #leyenda { display: none; }
 
-  #fire-info, #scar-info {
+  #fire-info, #scar-info, #loteo-info, #osm-info {
     left: 50% !important;
     top: auto !important;
     bottom: 84px;
