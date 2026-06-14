@@ -37,17 +37,96 @@ Si la key falta o es inválida, el panel muestra "Falta map key".
 
 ---
 
+## Histórico de cicatrices (pipeline GEE — Fase 3)
+
+`fire_scars_pipeline.py` genera un archivo GeoJSON con los polígonos de área quemada
+año por año (2018–presente) usando Sentinel-2 y Google Earth Engine.
+
+### 1. Instalar dependencias Python
+
+```bash
+pip install earthengine-api
+```
+
+### 2. Autenticar GEE (una sola vez)
+
+Necesitás un proyecto de Google Cloud gratuito (no comercial).
+Registralo en <https://earthengine.google.com> → **Get Started**.
+
+```bash
+earthengine authenticate --project TU_PROYECTO_CLOUD
+```
+
+Esto abre el navegador, pedís permiso con tu cuenta Google, y guarda credenciales
+en `~/.config/earthengine/credentials`. No hace falta repetirlo.
+
+### 3. Generar los GeoJSONs localmente
+
+```bash
+# Todos los años (2018–hoy), escala 100 m — primera pasada rápida:
+python fire_scars_pipeline.py --project TU_PROYECTO_CLOUD
+
+# Solo un año, más detalle:
+python fire_scars_pipeline.py --project TU_PROYECTO_CLOUD --years 2024 --scale 50
+
+# Pasar el proyecto por variable de entorno:
+export GEE_PROJECT=TU_PROYECTO_CLOUD
+python fire_scars_pipeline.py
+```
+
+Salida:
+- `data/incendios_{año}.geojson` — polígonos por año
+- `incendios_historico.geojson` — todos fusionados (para el visualizador)
+
+### 4. Exportar a Google Drive (para alta resolución o años con muchos incendios)
+
+Si `getInfo()` agota el tiempo (años como 2024 con 100 000+ ha quemadas):
+
+```bash
+python fire_scars_pipeline.py --project TU_PROYECTO_CLOUD --mode drive --scale 20
+```
+
+Monitorear tareas en <https://code.earthengine.google.com/tasks>.
+Cuando terminen, descargá los GeoJSONs de Drive y copiálos a `data/`.
+
+### Parámetros disponibles
+
+| Flag | Default | Descripción |
+|---|---|---|
+| `--project` | `$GEE_PROJECT` | ID del proyecto Google Cloud |
+| `--mode` | `local` | `local` (getInfo) o `drive` (exportar a Drive) |
+| `--years` | 2018–hoy | Años a procesar, ej. `--years 2020 2024` |
+| `--scale` | `100` | Resolución en metros (menor = más lento y detallado) |
+| `--min-area` | `1.0` | Área mínima de polígono en hectáreas |
+
+### Lógica del cálculo
+
+```
+NBR  = (B8 − B12) / (B8 + B12)   ← banda NIR y SWIR2 de Sentinel-2
+dNBR = NBR_antes − NBR_después    ← positivo = pérdida de vegetación
+
+Severidad exportada (dNBR sin escalar):
+  clase 2 — moderada-baja  [0.27–0.44]
+  clase 3 — moderada-alta  [0.44–0.66]
+  clase 4 — severa         [>0.66]
+```
+
+---
+
 ## Estructura de archivos
 
 ```
 proyecto-planeta/
-├── index.html              # Estructura HTML: HUD, panel de control, leyendas
-├── planeta.js              # Lógica CesiumJS: globo, focos FIRMS, vientos
-├── style.css               # Estética radar de nave espacial
-├── earth.jpg               # Textura del planeta
-├── gee_nbr_sierras.js      # Script Google Earth Engine: cicatriz de fuego (dNBR)
-├── INCENDIOS_ROADMAP.md    # Plan por fases del proyecto de transparencia
-└── README.md               # Este archivo
+├── index.html                   # HUD, panel de control, leyendas
+├── planeta.js                   # Globo CesiumJS: focos FIRMS, vientos
+├── style.css                    # Estética radar de nave espacial
+├── earth.jpg                    # Textura del planeta
+├── gee_nbr_sierras.js           # GEE (JS): cicatriz de un año en el editor web
+├── fire_scars_pipeline.py       # GEE (Python): histórico 2018–presente → GeoJSON
+├── incendios_historico.geojson  # Salida fusionada del pipeline (generado)
+├── data/                        # GeoJSONs por año (generados)
+├── INCENDIOS_ROADMAP.md         # Plan por fases del proyecto de transparencia
+└── README.md                    # Este archivo
 ```
 
 ---
