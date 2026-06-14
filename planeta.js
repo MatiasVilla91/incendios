@@ -405,6 +405,144 @@ document.getElementById('zoom-out').addEventListener('click', () => {
   viewer.camera.zoomOut(h * 0.6);
 });
 
+// ── Esri Wayback · comparador de imágenes históricas ──────────────────────
+const WAYBACK_CONFIG_URL = 'https://s3-us-west-2.amazonaws.com/config.maptiles.arcgis.com/waybackconfig.json';
+
+let waybackReleases   = [];
+let waybackLayerLeft  = null;
+let waybackLayerRight = null;
+let waybackActive     = false;
+let arrastrando       = false;
+
+const splitLineEl = document.getElementById('split-line');
+
+function waybackTileUrl(num) {
+  return `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/${num}/{z}/{y}/{x}`;
+}
+
+function posicionarDivisor(frac) {
+  splitLineEl.style.left = (frac * 100) + '%';
+}
+
+function clearWaybackLayers() {
+  if (waybackLayerLeft)  { viewer.imageryLayers.remove(waybackLayerLeft,  true); waybackLayerLeft  = null; }
+  if (waybackLayerRight) { viewer.imageryLayers.remove(waybackLayerRight, true); waybackLayerRight = null; }
+}
+
+async function fetchWaybackReleases() {
+  const res  = await fetch(WAYBACK_CONFIG_URL);
+  const json = await res.json();
+  const list = Object.entries(json).map(([num, r]) => {
+    const m    = (r.itemTitle || '').match(/(\d{4}-\d{2}-\d{2})/);
+    const date = m ? m[1] : null;
+    return { num, date, ts: date ? new Date(date).getTime() : NaN };
+  }).filter(r => !isNaN(r.ts));
+  list.sort((a, b) => a.ts - b.ts);
+  return list;
+}
+
+function poblarSelectores() {
+  const leftEl  = document.getElementById('wayback-left');
+  const rightEl = document.getElementById('wayback-right');
+  leftEl.innerHTML  = '';
+  rightEl.innerHTML = '';
+
+  for (const r of waybackReleases) {
+    const makeOpt = () => Object.assign(document.createElement('option'), { value: r.num, textContent: r.date });
+    leftEl.appendChild(makeOpt());
+    rightEl.appendChild(makeOpt());
+  }
+
+  // Default: izquierda ≈ 2016, derecha = más reciente
+  const idx = waybackReleases.findIndex(r => r.ts >= new Date('2016-01-01').getTime());
+  leftEl.selectedIndex  = idx >= 0 ? idx : 0;
+  rightEl.selectedIndex = waybackReleases.length - 1;
+}
+
+async function aplicarWayback() {
+  const statusEl = document.getElementById('wayback-status');
+  clearWaybackLayers();
+
+  const leftNum  = document.getElementById('wayback-left').value;
+  const rightNum = document.getElementById('wayback-right').value;
+
+  const makeProvider = num => new Cesium.UrlTemplateImageryProvider({
+    url:          waybackTileUrl(num),
+    maximumLevel: 23,
+    credit:       'Esri World Imagery Wayback',
+  });
+
+  waybackLayerLeft  = viewer.imageryLayers.addImageryProvider(makeProvider(leftNum));
+  waybackLayerRight = viewer.imageryLayers.addImageryProvider(makeProvider(rightNum));
+
+  waybackLayerLeft.splitDirection  = Cesium.SplitDirection.LEFT;
+  waybackLayerRight.splitDirection = Cesium.SplitDirection.RIGHT;
+
+  viewer.scene.splitPosition = 0.5;
+  posicionarDivisor(0.5);
+
+  const dateL = waybackReleases.find(r => r.num === leftNum)?.date  || '?';
+  const dateR = waybackReleases.find(r => r.num === rightNum)?.date || '?';
+  statusEl.textContent = `${dateL} ↔ ${dateR}`;
+}
+
+async function activarWayback() {
+  const statusEl = document.getElementById('wayback-status');
+
+  if (!waybackReleases.length) {
+    statusEl.textContent = 'Cargando fechas…';
+    try {
+      waybackReleases = await fetchWaybackReleases();
+      poblarSelectores();
+    } catch {
+      statusEl.textContent = 'Error al cargar Wayback';
+      document.getElementById('wayback-toggle').checked = false;
+      return;
+    }
+  }
+
+  document.getElementById('wayback-controls').style.display = 'flex';
+  splitLineEl.style.display = 'block';
+  waybackActive = true;
+  await aplicarWayback();
+}
+
+function desactivarWayback() {
+  clearWaybackLayers();
+  splitLineEl.style.display = 'none';
+  document.getElementById('wayback-controls').style.display = 'none';
+  document.getElementById('wayback-status').textContent = 'Inactivo';
+  viewer.scene.splitPosition = 0;
+  waybackActive = false;
+}
+
+// Drag del divisor (mouse + touch)
+function onDragSplit(clientX) {
+  const frac = Math.max(0.02, Math.min(0.98, clientX / window.innerWidth));
+  viewer.scene.splitPosition = frac;
+  posicionarDivisor(frac);
+}
+
+splitLineEl.addEventListener('mousedown',  e => { arrastrando = true;  e.preventDefault(); });
+splitLineEl.addEventListener('touchstart', e => { arrastrando = true;  e.preventDefault(); }, { passive: false });
+window.addEventListener('mousemove',  e => { if (arrastrando) onDragSplit(e.clientX); });
+window.addEventListener('mouseup',    () => { arrastrando = false; });
+window.addEventListener('touchmove',  e => {
+  if (arrastrando) { onDragSplit(e.touches[0].clientX); e.preventDefault(); }
+}, { passive: false });
+window.addEventListener('touchend', () => { arrastrando = false; });
+
+document.getElementById('wayback-toggle').addEventListener('change', e => {
+  if (e.target.checked) activarWayback();
+  else desactivarWayback();
+});
+
+['wayback-left', 'wayback-right'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => {
+    if (waybackActive) aplicarWayback();
+  });
+});
+
 // ── Init: incendios activos al arrancar ────────────────────────────────────
 document.getElementById('fire-toggle').checked = true;
 document.getElementById('fire-legend').style.display = 'block';

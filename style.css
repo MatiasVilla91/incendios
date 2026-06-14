@@ -559,3 +559,78 @@ details > #stats { margin-top: 4px; }
 @media (min-width: 641px) {
   #panel-btn-mob { display: none; }
 }
+
+/* ── Esri Wayback · comparador temporal ── */
+#split-line {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 255, 136, 0.65) 4%,
+    rgba(0, 255, 136, 0.65) 96%,
+    transparent 100%
+  );
+  z-index: 60;
+  cursor: col-resize;
+  user-select: none;
+  display: none;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+}
+
+#split-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;
+  background: rgba(0, 8, 4, 0.95);
+  border: 1px solid rgba(0, 255, 68, 0.55);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00ff88;
+  font-size: 16px;
+  font-family: 'Courier New', monospace;
+  box-shadow: 0 0 14px rgba(0, 255, 68, 0.22);
+  letter-spacing: 0;
+}
+
+#wayback-controls {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.wayback-select {
+  width: 100%;
+  background: rgba(0, 255, 68, 0.04);
+  border: 1px solid rgba(0, 255, 68, 0.18);
+  color: #00cc66;
+  padding: 5px 6px;
+  border-radius: 1px;
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.wayback-select:focus {
+  outline: none;
+  border-color: rgba(0, 255, 68, 0.45);
+  box-shadow: 0 0 6px rgba(0, 255, 68, 0.1);
+}
+.wayback-select option {
+  background: #000a04;
+  color: #00cc66;
+}
+
+#wayback-status { font-size: 10px; color: #004422; letter-spacing: 0.5px; }

@@ -87,6 +87,30 @@
       </details>
 
       <details>
+        <summary>Comparar en el tiempo</summary>
+        <div class="control-group">
+          <div class="alert-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="wayback-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+            <small id="wayback-status">Inactivo</small>
+          </div>
+        </div>
+        <div id="wayback-controls">
+          <div class="control-group">
+            <label>&#9664; Izquierda &middot; antes</label>
+            <select id="wayback-left" class="wayback-select"></select>
+          </div>
+          <div class="control-group">
+            <label>&#9654; Derecha &middot; despu&eacute;s</label>
+            <select id="wayback-right" class="wayback-select"></select>
+          </div>
+        </div>
+        <small class="risk-disclaimer">Esri World Imagery Wayback &middot; satelital hist&oacute;rico gratuito &middot; arrastr&aacute; el divisor verde para comparar</small>
+      </details>
+
+      <details>
         <summary>Vista</summary>
         <div class="control-group">
           <button id="center-btn">Centrar en Córdoba</button>
@@ -119,6 +143,11 @@
 
   <!-- Tooltip de foco -->
   <div id="fire-info"></div>
+
+  <!-- Divisor temporal Wayback -->
+  <div id="split-line">
+    <div id="split-handle">&#8660;</div>
+  </div>
 
   <!-- Atribución de tiles -->
   <div id="map-attr">
