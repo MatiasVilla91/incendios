@@ -1,0 +1,182 @@
+[
+  {
+    "year": 2024,
+    "lon": -62.71073,
+    "lat": -30.46447,
+    "area_ha": 1702207,
+    "osm_tipo": "Zona industrial",
+    "osm_nombre": "Club Juventud Sportiva Totoral",
+    "label": "2024 · 1.702.207 ha · Zona industrial · Club Juventud Sportiva Totoral"
+  },
+  {
+    "year": 2020,
+    "lon": -64.93439,
+    "lat": -32.82124,
+    "area_ha": 169164,
+    "osm_tipo": "Urbanización / Barrio privado",
+    "osm_nombre": "Unión de los Rios",
+    "label": "2020 · 169.164 ha · Urbanización / Barrio privado · Unión de los Rios"
+  },
+  {
+    "year": 2019,
+    "lon": -64.10701,
+    "lat": -33.28904,
+    "area_ha": 135845,
+    "osm_tipo": "Centro deportivo",
+    "osm_nombre": "Autódromo Parque Ciudad de Río Cuarto",
+    "label": "2019 · 135.845 ha · Centro deportivo · Autódromo Parque Ciudad de Río Cuarto"
+  },
+  {
+    "year": 2020,
+    "lon": -64.75185,
+    "lat": -31.07921,
+    "area_ha": 100814,
+    "osm_tipo": "Centro deportivo",
+    "osm_nombre": "Villa Bautista",
+    "label": "2020 · 100.814 ha · Centro deportivo · Villa Bautista"
+  },
+  {
+    "year": 2019,
+    "lon": -64.46482,
+    "lat": -33.61389,
+    "area_ha": 69195,
+    "osm_tipo": "Urbanización / Barrio privado",
+    "osm_nombre": "Malena",
+    "label": "2019 · 69.195 ha · Urbanización / Barrio privado · Malena"
+  },
+  {
+    "year": 2021,
+    "lon": -64.10222,
+    "lat": -29.98939,
+    "area_ha": 55805,
+    "osm_tipo": "Urbanización / Barrio privado",
+    "osm_nombre": "San Pedro Norte",
+    "label": "2021 · 55.805 ha · Urbanización / Barrio privado · San Pedro Norte"
+  },
+  {
+    "year": 2019,
+    "lon": -64.80014,
+    "lat": -29.9466,
+    "area_ha": 50533,
+    "osm_tipo": "Zona industrial",
+    "osm_nombre": "Lisal",
+    "label": "2019 · 50.533 ha · Zona industrial · Lisal"
+  },
+  {
+    "year": 2024,
+    "lon": -64.49186,
+    "lat": -30.85007,
+    "area_ha": 49897,
+    "osm_tipo": "Hotel / Alojamiento",
+    "osm_nombre": "Hotel cruz Chica",
+    "label": "2024 · 49.897 ha · Hotel / Alojamiento · Hotel cruz Chica"
+  },
+  {
+    "year": 2020,
+    "lon": -64.46868,
+    "lat": -30.80657,
+    "area_ha": 47155,
+    "osm_tipo": "Hotel / Alojamiento",
+    "osm_nombre": "Hotel cruz Chica",
+    "label": "2020 · 47.155 ha · Hotel / Alojamiento · Hotel cruz Chica"
+  },
+  {
+    "year": 2020,
+    "lon": -64.51835,
+    "lat": -31.5944,
+    "area_ha": 28556,
+    "osm_tipo": "Zona comercial",
+    "osm_nombre": "Estación Terrena Bosque Alegre",
+    "label": "2020 · 28.556 ha · Zona comercial · Estación Terrena Bosque Alegre"
+  },
+  {
+    "year": 2025,
+    "lon": -64.37673,
+    "lat": -33.56523,
+    "area_ha": 24318,
+    "osm_tipo": "Urbanización / Barrio privado",
+    "osm_nombre": "Malena",
+    "label": "2025 · 24.318 ha · Urbanización / Barrio privado · Malena"
+  },
+  {
+    "year": 2023,
+    "lon": -64.05193,
+    "lat": -31.11298,
+    "area_ha": 19626,
+    "osm_tipo": "Zona industrial",
+    "osm_nombre": "Fábrica de Salames Familia Grión",
+    "label": "2023 · 19.626 ha · Zona industrial · Fábrica de Salames Familia Grión"
+  },
+  {
+    "year": 2023,
+    "lon": -64.37458,
+    "lat": -33.53792,
+    "area_ha": 19357,
+    "osm_tipo": "Urbanización / Barrio privado",
+    "osm_nombre": "San Basilio",
+    "label": "2023 · 19.357 ha · Urbanización / Barrio privado · San Basilio"
+  },
+  {
+    "year": 2019,
+    "lon": -64.38759,
+    "lat": -33.02218,
+    "area_ha": 16502,
+    "osm_tipo": "Urbanización / Barrio privado",
+    "osm_nombre": "Barrio Los Caciques",
+    "label": "2019 · 16.502 ha · Urbanización / Barrio privado · Barrio Los Caciques"
+  },
+  {
+    "year": 2024,
+    "lon": -64.12373,
+    "lat": -31.11922,
+    "area_ha": 15717,
+    "osm_tipo": "Urbanización / Barrio privado",
+    "osm_nombre": "",
+    "label": "2024 · 15.717 ha · Urbanización / Barrio privado"
+  },
+  {
+    "year": 2019,
+    "lon": -64.08622,
+    "lat": -31.12374,
+    "area_ha": 15204,
+    "osm_tipo": "Zona industrial",
+    "osm_nombre": "",
+    "label": "2019 · 15.204 ha · Zona industrial"
+  },
+  {
+    "year": 2023,
+    "lon": -64.07613,
+    "lat": -30.88114,
+    "area_ha": 14215,
+    "osm_tipo": "Zona industrial",
+    "osm_nombre": "",
+    "label": "2023 · 14.215 ha · Zona industrial"
+  },
+  {
+    "year": 2020,
+    "lon": -64.4033,
+    "lat": -31.29745,
+    "area_ha": 13151,
+    "osm_tipo": "Hotel / Alojamiento",
+    "osm_nombre": "Complejo MAS Ministerio de Acción Social",
+    "label": "2020 · 13.151 ha · Hotel / Alojamiento · Complejo MAS Ministerio de Acción Social"
+  },
+  {
+    "year": 2021,
+    "lon": -64.04622,
+    "lat": -30.87202,
+    "area_ha": 12953,
+    "osm_tipo": "Zona industrial",
+    "osm_nombre": "",
+    "label": "2021 · 12.953 ha · Zona industrial"
+  },
+  {
+    "year": 2023,
+    "lon": -64.54129,
+    "lat": -33.4167,
+    "area_ha": 12596,
+    "osm_tipo": "Zona industrial",
+    "osm_nombre": "",
+    "label": "2023 · 12.596 ha · Zona industrial"
+  }
+]

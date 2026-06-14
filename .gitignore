@@ -1,5 +1,4 @@
 node_modules/
 
-# Archivos generados por el pipeline GEE — regenerar localmente con fire_scars_pipeline.py
-data/
+# Datos brutos del pipeline GEE (no se necesitan en el repo)
 incendios_historico.geojson

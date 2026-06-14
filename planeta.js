@@ -273,14 +273,19 @@ const scarInfoEl = document.getElementById('scar-info');
 const deptInfoEl = document.getElementById('dept-info');
 let   scarDataSource  = null;
 let   currentScarYear = 2024;
+let   _currentScarData = null;
 const deptHoverMap    = new Map(); // entity.id → nombre del departamento
 const loteoInfoEl     = document.getElementById('loteo-info');
 let   loteosDataSource = null;
 const loteoInfoMap    = new Map(); // entity.id → { nombre, titular, tipo, label }
 
-const osmInfoEl       = document.getElementById('osm-info');
-let   osmDataSource   = null;
-const osmInfoMap      = new Map(); // entity.id → { tipo_label, nombre }
+const osmInfoEl          = document.getElementById('osm-info');
+let   osmDataSource      = null;
+const osmInfoMap         = new Map(); // entity.id → { tipo_label, nombre }
+
+const recurrenciaInfoEl  = document.getElementById('recurrencia-info');
+let   recurrenciaDS      = null;
+const recurrenciaMap     = new Map(); // entity.id → { veces, area_ha }
 
 function osmColor(tipo) {
   if (tipo === 'golf_course' || tipo === 'resort' || tipo === 'hotel')
@@ -315,48 +320,68 @@ function showFireTooltip(picked, x, y) {
 
 const hoverHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 hoverHandler.setInputAction((m) => {
-  const picked = viewer.scene.pick(m.endPosition);
+  const allPicked = viewer.scene.drillPick(m.endPosition, 8);
   const x = m.endPosition.x + 14;
   const y = m.endPosition.y - 10;
 
-  if (showFireTooltip(picked, x, y)) {
+  const firePick = allPicked.find(p => p?.id?._fire);
+  if (showFireTooltip(firePick, x, y)) {
     deptInfoEl.style.display = 'none';
     return;
   }
 
-  if (Cesium.defined(picked) && picked.id && scarDataSource &&
-      scarDataSource.entities.contains(picked.id)) {
+  const scarPick = allPicked.find(p => p?.id && scarDataSource?.entities.contains(p.id));
+  if (scarPick) {
     viewer.scene.canvas.style.cursor = 'pointer';
-    infoEl.style.display = 'none';
+    infoEl.style.display     = 'none';
     deptInfoEl.style.display = 'none';
+    recurrenciaInfoEl.style.display = 'none';
     return;
   }
 
-  const entityId = picked?.id?.id;
+  const recurrenciaPick = allPicked.find(p => p?.id?.id && recurrenciaMap.has(p.id.id));
+  if (recurrenciaPick) {
+    const rd = recurrenciaMap.get(recurrenciaPick.id.id);
+    recurrenciaInfoEl.innerHTML =
+      `<strong style="color:${recurrenciaColor(rd.veces)}">&#128293; Zona de alta recurrencia</strong>` +
+      `<br><small>Quemada <strong>${rd.veces} veces</strong> entre 2018–2025<br>~${rd.area_ha} ha</small>`;
+    recurrenciaInfoEl.style.display = 'block';
+    recurrenciaInfoEl.style.left = x + 'px';
+    recurrenciaInfoEl.style.top  = y + 'px';
+    viewer.scene.canvas.style.cursor = 'pointer';
+    infoEl.style.display     = 'none';
+    deptInfoEl.style.display = 'none';
+    return;
+  }
+  recurrenciaInfoEl.style.display = 'none';
+
+  const osmPick   = allPicked.find(p => p?.id?.id && osmInfoMap.has(p.id.id));
+  const loteoPick = allPicked.find(p => p?.id?.id && loteoInfoMap.has(p.id.id));
+  const deptPick  = allPicked.find(p => p?.id?.id && deptHoverMap.has(p.id.id));
 
   // Hover sobre feature OSM
-  if (entityId && osmInfoMap.has(entityId)) {
+  if (osmPick) {
     viewer.scene.canvas.style.cursor = 'pointer';
-    infoEl.style.display    = 'none';
+    infoEl.style.display     = 'none';
     deptInfoEl.style.display = 'none';
     return;
   }
 
   // Hover sobre loteo
-  if (entityId && loteoInfoMap.has(entityId)) {
+  if (loteoPick) {
     viewer.scene.canvas.style.cursor = 'pointer';
-    infoEl.style.display = 'none';
+    infoEl.style.display     = 'none';
     deptInfoEl.style.display = 'none';
     return;
   }
 
   // Hover sobre departamento
-  if (entityId && deptHoverMap.has(entityId)) {
-    const nombre = deptHoverMap.get(entityId);
-    deptInfoEl.textContent = nombre;
+  if (deptPick) {
+    const nombre = deptHoverMap.get(deptPick.id.id);
+    deptInfoEl.textContent   = nombre;
     deptInfoEl.style.display = 'block';
-    deptInfoEl.style.left = x + 'px';
-    deptInfoEl.style.top  = y + 'px';
+    deptInfoEl.style.left    = x + 'px';
+    deptInfoEl.style.top     = y + 'px';
     viewer.scene.canvas.style.cursor = 'default';
   } else {
     deptInfoEl.style.display = 'none';
@@ -366,23 +391,42 @@ hoverHandler.setInputAction((m) => {
 
 const tapHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 tapHandler.setInputAction((click) => {
-  const picked = viewer.scene.pick(click.position);
+  const allPicked = viewer.scene.drillPick(click.position, 10);
   const x = Math.min(click.position.x + 16, window.innerWidth - 240);
   const y = Math.max(click.position.y - 16, 10);
-  if (showFireTooltip(picked, x, y)) {
+
+  const firePick        = allPicked.find(p => p?.id?._fire);
+  const scarPick        = allPicked.find(p => p?.id && scarDataSource?.entities.contains(p.id));
+  const loteoPick       = allPicked.find(p => p?.id?.id && loteoInfoMap.has(p.id.id));
+  const osmPick         = allPicked.find(p => p?.id?.id && osmInfoMap.has(p.id.id));
+  const recurrenciaPick2 = allPicked.find(p => p?.id?.id && recurrenciaMap.has(p.id.id));
+
+  if (showFireTooltip(firePick, x, y)) {
+    scarInfoEl.style.display       = 'none';
+    loteoInfoEl.style.display      = 'none';
+    osmInfoEl.style.display        = 'none';
+    recurrenciaInfoEl.style.display = 'none';
+  } else if (showScarTooltip(scarPick, x, y)) {
+    loteoInfoEl.style.display       = 'none';
+    osmInfoEl.style.display         = 'none';
+    recurrenciaInfoEl.style.display = 'none';
+    if (_currentScarData && recurrenciaPick2) {
+      const rd = recurrenciaMap.get(recurrenciaPick2.id.id);
+      if (rd) _currentScarData.veces_quemado = rd.veces;
+    }
+  } else if (showLoteoTooltip(loteoPick, x, y)) {
+    scarInfoEl.style.display       = 'none';
+    osmInfoEl.style.display        = 'none';
+    recurrenciaInfoEl.style.display = 'none';
+  } else if (recurrenciaPick2) {
     scarInfoEl.style.display  = 'none';
     loteoInfoEl.style.display = 'none';
     osmInfoEl.style.display   = 'none';
-  } else if (showScarTooltip(picked, x, y)) {
-    loteoInfoEl.style.display = 'none';
-    osmInfoEl.style.display   = 'none';
-  } else if (showLoteoTooltip(picked, x, y)) {
-    scarInfoEl.style.display = 'none';
-    osmInfoEl.style.display  = 'none';
   } else {
-    scarInfoEl.style.display  = 'none';
-    loteoInfoEl.style.display = 'none';
-    showOSMTooltip(picked, x, y);
+    scarInfoEl.style.display       = 'none';
+    loteoInfoEl.style.display      = 'none';
+    recurrenciaInfoEl.style.display = 'none';
+    showOSMTooltip(osmPick ?? allPicked[0], x, y);
   }
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
@@ -646,28 +690,40 @@ async function cargarCicatrices(year) {
       `data/incendios_${year}.geojson`,
       { clampToGround: true }
     );
-    let count = 0, nBosque = 0, nIdecor = 0;
+    let count = 0, nBosque = 0, nIdecor = 0, totalHa = 0, nLoteo = 0;
     for (const entity of ds.entities.values) {
       if (!entity.polygon) continue;
-      const props     = entity.properties?.getValue(Cesium.JulianDate.now()) ?? {};
-      const bosque    = !!props.bosque_nativo;
+      const props      = entity.properties?.getValue(Cesium.JulianDate.now()) ?? {};
+      const bosque     = !!props.bosque_nativo;
       const verificado = !!props.idecor_verificado;
-      const alpha     = verificado ? 0.70 : 0.55;
+      const alpha      = verificado ? 0.45 : 0.30;
       entity.polygon.material     = scarColor(props.severidad ?? 2).withAlpha(alpha);
       entity.polygon.outline      = bosque;
       entity.polygon.outlineColor = Cesium.Color.fromCssColorString('#00ff88').withAlpha(0.9);
       entity.polygon.outlineWidth = 2;
       count++;
+      totalHa += props.area_ha ?? 0;
       if (bosque)    nBosque++;
       if (verificado) nIdecor++;
+      if (props.loteo_superpuesto || props.loteo_post_incendio) nLoteo++;
     }
     viewer.dataSources.add(ds);
     scarDataSource  = ds;
     currentScarYear = year;
     const bosqueNote = nBosque > 0 ? ` · ${nBosque} bosque nativo` : '';
     statusEl.textContent = `Activo · ${count} polígonos · ${year}${bosqueNote}`;
+
+    // Estadísticas
+    const statsEl = document.getElementById('scar-stats');
+    const haFmt   = Math.round(totalHa).toLocaleString('es-AR');
+    let statsHtml = `<strong>${haFmt} ha</strong> quemadas en ${year}`;
+    if (nBosque > 0) statsHtml += `<br><span style="color:#00ff88">&#9679; ${nBosque} polígonos con bosque nativo</span>`;
+    if (nLoteo  > 0) statsHtml += `<br><span style="color:#22d3ee">&#9632; ${nLoteo} con loteo superpuesto</span>`;
+    statsEl.innerHTML     = statsHtml;
+    statsEl.style.display = 'block';
   } catch (e) {
     statusEl.textContent = 'Error al cargar';
+    document.getElementById('scar-stats').style.display = 'none';
     console.error('cicatrices:', e);
   }
 }
@@ -724,6 +780,20 @@ function showScarTooltip(picked, x, y) {
     if (loteoNombre) html += `: ${loteoNombre}`;
     html += `</small>`;
   }
+
+  _currentScarData = {
+    year: yr, area_ha: area, severidad: sev, severidad_label: label,
+    bosque_nativo: bosque, idecor_verificado: verificado,
+    cobertura, localidad,
+    departamento:       props.departamento_idecor  || '',
+    osm_desarrollo:     osmDes,
+    osm_tipo:           osmTipo,
+    osm_nombre:         osmNombre,
+    loteo_superpuesto:  loteo,
+    loteo_post_incendio: loteoPost,
+    nombre_loteo:       loteoNombre,
+  };
+  html += '<br><button class="ai-btn" onclick="openClaudePanel()">🤖 Analizar con IA</button>';
 
   scarInfoEl.innerHTML = html;
   scarInfoEl.style.display = 'block';
@@ -820,7 +890,9 @@ document.getElementById('scar-toggle').addEventListener('change', e => {
   } else {
     controls.style.display = 'none';
     clearCicatrices();
+    stopScarAnimation();
     document.getElementById('scar-status').textContent = 'Inactivo';
+    document.getElementById('scar-stats').style.display = 'none';
   }
 });
 
@@ -1163,3 +1235,276 @@ document.getElementById('divpol-toggle').addEventListener('change', e => {
 document.getElementById('fire-toggle').checked = true;
 document.getElementById('fire-legend').style.display = 'block';
 cargarIncendios();
+
+// ── Animación por año ────────────────────────────────────────────────────────
+const SCAR_YEARS = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
+let   scarAnimTimer = null;
+
+function stopScarAnimation() {
+  if (scarAnimTimer) { clearTimeout(scarAnimTimer); scarAnimTimer = null; }
+  const btn = document.getElementById('scar-play-btn');
+  if (btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
+}
+
+function advanceScarYear() {
+  const sel = document.getElementById('scar-year');
+  const cur = parseInt(sel.value);
+  const idx = SCAR_YEARS.indexOf(cur);
+  const next = SCAR_YEARS[(idx + 1) % SCAR_YEARS.length];
+  sel.value = String(next);
+  sel.dispatchEvent(new Event('change'));
+  if (next !== SCAR_YEARS[SCAR_YEARS.length - 1]) {
+    scarAnimTimer = setTimeout(advanceScarYear, 2000);
+  } else {
+    stopScarAnimation();
+  }
+}
+
+document.getElementById('scar-play-btn').addEventListener('click', () => {
+  if (scarAnimTimer) { stopScarAnimation(); return; }
+  const btn = document.getElementById('scar-play-btn');
+  btn.textContent = '⏹';
+  btn.classList.add('playing');
+  // Empieza desde 2018
+  const sel = document.getElementById('scar-year');
+  sel.value = '2018';
+  sel.dispatchEvent(new Event('change'));
+  scarAnimTimer = setTimeout(advanceScarYear, 2000);
+});
+
+// ── Casos de alerta (Fase 4) ─────────────────────────────────────────────────
+async function poblarCasosAlerta() {
+  const listEl = document.getElementById('casos-list');
+  try {
+    const resp = await fetch('data/casos_alerta.json');
+    if (!resp.ok) throw new Error('sin datos');
+    const casos = await resp.json();
+
+    listEl.innerHTML = '';
+    for (const c of casos) {
+      const btn = document.createElement('button');
+      btn.className = 'caso-btn';
+
+      const tags = [];
+      if (c.recurrencia >= 2) tags.push(`🔁 ${c.recurrencia}x`);
+      if (c.bosque_nativo)    tags.push('🌿 bosque');
+      if (c.loteo_post)       tags.push('⚠ loteo');
+      if (c.osm_alto_valor)   tags.push('⛳ desarrollo');
+
+      btn.innerHTML =
+        `<span class="caso-score">⚠ ${c.score}</span>` +
+        `<strong>${c.year} · ${c.area_ha.toLocaleString('es-AR')} ha</strong>` +
+        (c.localidad ? ` · ${c.localidad}` : '') +
+        `<span class="caso-tags">${tags.join(' · ')}</span>`;
+
+      btn.addEventListener('click', () => {
+        // Activar cicatrices del año del caso
+        const scarToggle = document.getElementById('scar-toggle');
+        const scarYear   = document.getElementById('scar-year');
+        if (!scarToggle.checked) {
+          scarToggle.checked = true;
+          scarToggle.dispatchEvent(new Event('change'));
+        }
+        scarYear.value = String(c.year);
+        scarYear.dispatchEvent(new Event('change'));
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(c.lon, c.lat, 35000),
+          orientation: { heading: 0, pitch: Cesium.Math.toRadians(-60), roll: 0 },
+          duration: 2,
+        });
+      });
+
+      listEl.appendChild(btn);
+    }
+    if (casos.length === 0)
+      listEl.innerHTML = '<small style="color:var(--text-muted)">Sin datos — correr generar_casos_alerta.py</small>';
+  } catch {
+    listEl.innerHTML = '<small style="color:var(--text-muted)">Sin datos — correr generar_casos_alerta.py</small>';
+  }
+}
+poblarCasosAlerta();
+
+// ── Recurrencia de incendios ─────────────────────────────────────────────────
+function recurrenciaColor(n) {
+  if (n >= 5) return '#7c0000';
+  if (n === 4) return '#dc2626';
+  if (n === 3) return '#f97316';
+  return '#facc15';
+}
+
+async function cargarRecurrencia() {
+  const statusEl = document.getElementById('recurrencia-status');
+  statusEl.textContent = 'Cargando...';
+  limpiarRecurrencia(false);
+
+  try {
+    const resp  = await fetch('data/recurrencia.geojson');
+    if (!resp.ok) throw new Error('sin datos');
+    const geojson = await resp.json();
+
+    const ds = new Cesium.CustomDataSource('recurrencia');
+    let count = 0;
+
+    for (const feat of geojson.features) {
+      const props  = feat.properties;
+      const veces  = props.veces_quemado ?? 2;
+      const area   = props.area_ha ?? 0;
+      const color  = Cesium.Color.fromCssColorString(recurrenciaColor(veces)).withAlpha(0.55);
+      const geom   = feat.geometry;
+      const isMulti = geom.type === 'MultiPolygon';
+      const polys  = isMulti ? geom.coordinates : [geom.coordinates];
+
+      for (const poly of polys) {
+        const outerFlat = poly[0].flatMap(([lon, lat]) => [lon, lat]);
+        const e = ds.entities.add({
+          polygon: {
+            hierarchy: new Cesium.PolygonHierarchy(
+              Cesium.Cartesian3.fromDegreesArray(outerFlat)
+            ),
+            material:      color,
+            clampToGround: true,
+          },
+        });
+        recurrenciaMap.set(e.id, { veces, area_ha: area });
+        count++;
+      }
+    }
+
+    viewer.dataSources.add(ds);
+    recurrenciaDS = ds;
+    const legend = document.getElementById('recurrencia-legend');
+    legend.style.display = 'block';
+    statusEl.textContent = `Activo · ${count} zonas`;
+  } catch (e) {
+    statusEl.textContent = 'Sin datos — correr generar_recurrencia.py';
+    console.error('recurrencia:', e);
+  }
+}
+
+function limpiarRecurrencia(resetStatus = true) {
+  if (recurrenciaDS) {
+    viewer.dataSources.remove(recurrenciaDS, true);
+    recurrenciaDS = null;
+  }
+  recurrenciaMap.clear();
+  recurrenciaInfoEl.style.display = 'none';
+  document.getElementById('recurrencia-legend').style.display = 'none';
+  if (resetStatus)
+    document.getElementById('recurrencia-status').textContent = 'Inactivo';
+}
+
+document.getElementById('recurrencia-toggle').addEventListener('change', e => {
+  if (e.target.checked) cargarRecurrencia();
+  else limpiarRecurrencia();
+});
+
+// ── Claude API · Análisis de cicatrices ──────────────────────────────────────
+// La key vive en Cloudflare como secreto — nunca en este archivo.
+// Cambiá esta URL por la de tu worker después de desplegarlo.
+const WORKER_URL = 'https://incendios-ai.matias-sv91.workers.dev';
+
+function openClaudePanel() {
+  if (!_currentScarData) return;
+  const panel = document.getElementById('claude-panel');
+  panel.style.display = 'flex';
+  runClaudeAnalysis();
+}
+
+async function runClaudeAnalysis() {
+  const content = document.getElementById('claude-content');
+  content.innerHTML = '<p class="claude-loading"></p>';
+
+  try {
+    const resp = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 450,
+        messages: [{ role: 'user', content: buildClaudePrompt(_currentScarData) }],
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${resp.status}`);
+    }
+    const result = await resp.json();
+    const text   = result.content?.[0]?.text || '(sin respuesta)';
+    content.innerHTML = formatClaudeText(text);
+  } catch (e) {
+    content.innerHTML = `<p class="claude-error">Error: ${e.message}</p>`;
+  }
+}
+
+function buildClaudePrompt(d) {
+  const bosque     = d.bosque_nativo        ? 'SÍ' : 'no';
+  const verificado = d.idecor_verificado    ? 'SÍ' : 'no';
+  const loteoPost  = d.loteo_post_incendio  ? `SÍ — ${d.nombre_loteo || 'sin nombre'}` : 'no';
+  const loteo      = d.loteo_superpuesto    ? `SÍ — ${d.nombre_loteo || 'sin nombre'}` : 'no';
+  const recurrencia = d.veces_quemado
+    ? `SÍ — quemada ${d.veces_quemado} veces entre 2018–2025`
+    : 'no (primera vez o sin dato)';
+
+  // Distinguir OSM de alto valor (golf, resort, hotel) vs residencial genérico
+  let osmLinea = '- Desarrollo en zona quemada (OSM): no';
+  if (d.osm_desarrollo) {
+    const tipoLower = (d.osm_tipo || '').toLowerCase();
+    const esAltoValor = tipoLower.includes('golf') || tipoLower.includes('resort') ||
+                        tipoLower.includes('hotel') || tipoLower.includes('camping') ||
+                        tipoLower.includes('estancia');
+    const nombre = d.osm_nombre ? ` — "${d.osm_nombre}"` : '';
+    if (esAltoValor) {
+      osmLinea = `- Desarrollo de alto valor económico sobre la cicatriz (OSM): SÍ — ${d.osm_tipo}${nombre}
+  → SEÑAL A EVALUAR: campos de golf, resorts y establecimientos turísticos que se superponen con cicatrices de incendio pueden indicar que el fuego habilitó ese uso del suelo. Mencionalo en "Señales de alerta" si hay bosque nativo afectado.`;
+    } else {
+      osmLinea = `- Desarrollo urbano preexistente en la zona (OSM, solo contexto): SÍ — ${d.osm_tipo}${nombre}`;
+    }
+  }
+
+  return `Sos un analista ambiental experto en incendios forestales en las Sierras de Córdoba, Argentina. Generá una síntesis directa (máximo 170 palabras) en tres partes con encabezados en negrita.
+
+**Qué ocurrió**
+Describí el incendio brevemente.
+
+**Impacto ecológico**
+Qué se perdió y por qué importa.
+
+**Señales de alerta**
+Evaluá estas señales por separado, de mayor a menor gravedad:
+1. Recurrencia: zona quemada múltiples veces — señal fuerte de incendio sistemático/intencional.
+2. Loteo post-incendio: subdivisión municipal aprobada DESPUÉS del incendio — señal grave de cambio de uso ilegal.
+3. Desarrollo de alto valor sobre la cicatriz (golf, resort, hotel): puede indicar que el fuego despejó suelo para ese uso.
+Si no hay ninguna señal, decilo claramente sin rodeos.
+
+Datos:
+- Año: ${d.year}
+- Área: ~${d.area_ha} ha
+- Severidad: ${d.severidad_label} (clase ${d.severidad})
+- Departamento: ${d.departamento || 'sin dato'}
+- Localidad IDECOR: ${d.localidad || 'sin dato'}
+- Verificado IDECOR: ${verificado}
+- Bosque nativo quemado: ${bosque}
+- Cobertura vegetal: ${d.cobertura || 'sin dato'}
+${osmLinea}
+- Recurrencia (zona quemada en años anteriores): ${recurrencia}
+- Loteo municipal aprobado POST-incendio: ${loteoPost}
+- Loteo municipal superpuesto: ${loteo}
+
+Ley 26.331 y Ley 9.814 provincial: prohíben cambiar el uso del suelo en bosque nativo categorías I y II.
+
+Sé directo y objetivo.`;
+}
+
+function formatClaudeText(raw) {
+  const html = raw
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .split(/\n\n+/)
+    .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+    .join('');
+  return `<div class="claude-text">${html}</div>`;
+}
+
+document.getElementById('claude-close-btn').addEventListener('click', () => {
+  document.getElementById('claude-panel').style.display = 'none';
+});

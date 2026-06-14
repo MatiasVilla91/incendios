@@ -77,6 +77,10 @@ for feat in osm_fc["features"]:
     area_ha = area_m2(g) / 10000
     if area_ha < MIN_OSM_HA or area_ha > MAX_OSM_HA:
         continue
+    nombre = p.get("nombre", "")
+    # landuse=residential sin nombre es zona urbana genérica, no barrio identificable
+    if tipo == "residential" and not nombre:
+        continue
     osm_shapes.append({
         "geom":      g,
         "area_ha":   area_ha,

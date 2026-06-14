@@ -127,17 +127,21 @@
         <div id="scar-controls" style="display:none">
           <div class="control-group">
             <label>A&ntilde;o</label>
-            <select id="scar-year" class="wayback-select">
-              <option value="2025">2025</option>
-              <option value="2024" selected>2024 &mdash; mayor temporada</option>
-              <option value="2023">2023</option>
-              <option value="2022">2022</option>
-              <option value="2021">2021</option>
-              <option value="2020">2020</option>
-              <option value="2019">2019</option>
-              <option value="2018">2018</option>
-            </select>
+            <div class="scar-year-row">
+              <select id="scar-year" class="wayback-select">
+                <option value="2025">2025</option>
+                <option value="2024" selected>2024 &mdash; mayor temporada</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+                <option value="2021">2021</option>
+                <option value="2020">2020</option>
+                <option value="2019">2019</option>
+                <option value="2018">2018</option>
+              </select>
+              <button id="scar-play-btn" title="Animar 2018→2025">▶</button>
+            </div>
           </div>
+          <div id="scar-stats"></div>
           <div id="scar-legend">
             <div class="leyenda-item"><span class="dot" style="background:#ff9900"></span> Moderada-baja</div>
             <div class="leyenda-item"><span class="dot" style="background:#ff5500"></span> Moderada-alta</div>
@@ -149,6 +153,26 @@
           </div>
         </div>
         <small class="risk-disclaimer">Sentinel-2 &middot; dNBR &middot; GEE &middot; 2018&ndash;2025 &middot; cruzado con IDECOR &middot; clic para detalles</small>
+      </details>
+
+      <details>
+        <summary>Recurrencia de incendios</summary>
+        <div class="control-group">
+          <div class="alert-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="recurrencia-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+            <small id="recurrencia-status">Inactivo</small>
+          </div>
+        </div>
+        <div id="recurrencia-legend" style="display:none;margin-top:6px">
+          <div class="leyenda-item"><span class="dot" style="background:#facc15"></span> Quemada 2 veces</div>
+          <div class="leyenda-item"><span class="dot" style="background:#f97316"></span> Quemada 3 veces</div>
+          <div class="leyenda-item"><span class="dot" style="background:#dc2626"></span> Quemada 4 veces</div>
+          <div class="leyenda-item"><span class="dot" style="background:#7c0000"></span> Quemada 5+ veces</div>
+        </div>
+        <small class="risk-disclaimer">Zonas quemadas más de una vez entre 2018–2025 · mayor recurrencia = mayor sospecha de incendio intencional</small>
       </details>
 
       <details>
@@ -224,6 +248,12 @@
       </details>
 
       <details>
+        <summary>Casos de alerta 🚨</summary>
+        <div id="casos-list" style="display:flex;flex-direction:column;gap:4px;margin-top:6px"></div>
+        <small class="risk-disclaimer">Cicatrices rankeadas por señales de alerta: recurrencia · bosque nativo · loteo post-incendio · desarrollo de alto valor</small>
+      </details>
+
+      <details>
         <summary>Vista</summary>
         <div class="control-group">
           <button id="center-btn">Centrar en Córdoba</button>
@@ -259,6 +289,22 @@
 
   <!-- Tooltip de cicatriz -->
   <div id="scar-info"></div>
+
+  <!-- Panel de análisis IA (Claude) -->
+  <div id="claude-panel">
+    <div id="claude-panel-header">
+      <span id="claude-panel-title">🤖 Análisis IA</span>
+      <button id="claude-close-btn" title="Cerrar">✕</button>
+    </div>
+    <div id="claude-panel-body">
+      <div id="claude-content">
+        <p class="claude-hint">Hacé clic en una cicatriz y luego en "Analizar con IA".</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tooltip de recurrencia -->
+  <div id="recurrencia-info"></div>
 
   <!-- Tooltip de departamento (hover) -->
   <div id="dept-info"></div>
