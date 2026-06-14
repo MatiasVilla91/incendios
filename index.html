@@ -11,6 +11,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Incendios Córdoba</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://unpkg.com/cesium@1.120.0/Build/Cesium/Widgets/widgets.css">
 </head>
@@ -111,6 +114,77 @@
       </details>
 
       <details>
+        <summary>Cicatrices hist&oacute;ricas</summary>
+        <div class="control-group">
+          <div class="alert-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="scar-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+            <small id="scar-status">Inactivo</small>
+          </div>
+        </div>
+        <div id="scar-controls" style="display:none">
+          <div class="control-group">
+            <label>A&ntilde;o</label>
+            <select id="scar-year" class="wayback-select">
+              <option value="2025">2025</option>
+              <option value="2024" selected>2024 &mdash; mayor temporada</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+              <option value="2021">2021</option>
+              <option value="2020">2020</option>
+              <option value="2019">2019</option>
+              <option value="2018">2018</option>
+            </select>
+          </div>
+          <div id="scar-legend">
+            <div class="leyenda-item"><span class="dot" style="background:#ff9900"></span> Moderada-baja</div>
+            <div class="leyenda-item"><span class="dot" style="background:#ff5500"></span> Moderada-alta</div>
+            <div class="leyenda-item"><span class="dot" style="background:#ff1111"></span> Severa</div>
+            <div class="leyenda-item" style="margin-top:5px">
+              <span class="dot" style="background:transparent;border:2px solid #00ff88;box-sizing:border-box"></span>
+              Bosque nativo quemado
+            </div>
+          </div>
+        </div>
+        <small class="risk-disclaimer">Sentinel-2 &middot; dNBR &middot; GEE &middot; 2018&ndash;2025 &middot; cruzado con IDECOR &middot; clic para detalles</small>
+      </details>
+
+      <details>
+        <summary>Bosque nativo</summary>
+        <div class="control-group">
+          <div class="alert-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="otbn-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+            <small id="otbn-status">Inactivo</small>
+          </div>
+        </div>
+        <div id="otbn-legend" style="display:none;margin-top:6px">
+          <div class="leyenda-item"><span class="dot" style="background:#2d6a2d"></span> Bosque cerrado</div>
+          <div class="leyenda-item"><span class="dot" style="background:#5a9e3a"></span> Bosque abierto</div>
+          <div class="leyenda-item"><span class="dot" style="background:#8fbe4e"></span> Matorral</div>
+        </div>
+        <small class="risk-disclaimer">Cobertura vegetal IDECOR 2023/24 &middot; zonas forestales nativas de C&oacute;rdoba</small>
+      </details>
+
+      <details>
+        <summary>División política</summary>
+        <div class="control-group">
+          <div class="alert-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="divpol-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+            <small id="divpol-status">Inactivo</small>
+          </div>
+        </div>
+        <small class="risk-disclaimer">Provincias argentinas · Departamentos de Córdoba con etiquetas · IGN &amp; IDECOR</small>
+      </details>
+
+      <details>
         <summary>Vista</summary>
         <div class="control-group">
           <button id="center-btn">Centrar en Córdoba</button>
@@ -143,6 +217,12 @@
 
   <!-- Tooltip de foco -->
   <div id="fire-info"></div>
+
+  <!-- Tooltip de cicatriz -->
+  <div id="scar-info"></div>
+
+  <!-- Tooltip de departamento (hover) -->
+  <div id="dept-info"></div>
 
   <!-- Divisor temporal Wayback -->
   <div id="split-line">

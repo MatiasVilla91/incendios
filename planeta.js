@@ -268,7 +268,12 @@ async function cargarIncendios() {
 }
 
 // ── Tooltip de foco (hover + tap) ───────────────────────────────────────────
-const infoEl = document.getElementById('fire-info');
+const infoEl     = document.getElementById('fire-info');
+const scarInfoEl = document.getElementById('scar-info');
+const deptInfoEl = document.getElementById('dept-info');
+let   scarDataSource  = null;
+let   currentScarYear = 2024;
+const deptHoverMap    = new Map(); // entity.id → nombre del departamento
 
 function fireTooltipHTML(f) {
   const latS = `${Math.abs(f.lat).toFixed(3)}°${f.lat >= 0 ? 'N' : 'S'}`;
@@ -296,15 +301,47 @@ function showFireTooltip(picked, x, y) {
 const hoverHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 hoverHandler.setInputAction((m) => {
   const picked = viewer.scene.pick(m.endPosition);
-  showFireTooltip(picked, m.endPosition.x + 16, m.endPosition.y - 16);
+  const x = m.endPosition.x + 14;
+  const y = m.endPosition.y - 10;
+
+  if (showFireTooltip(picked, x, y)) {
+    deptInfoEl.style.display = 'none';
+    return;
+  }
+
+  if (Cesium.defined(picked) && picked.id && scarDataSource &&
+      scarDataSource.entities.contains(picked.id)) {
+    viewer.scene.canvas.style.cursor = 'pointer';
+    infoEl.style.display = 'none';
+    deptInfoEl.style.display = 'none';
+    return;
+  }
+
+  // Hover sobre departamento
+  const entityId = picked?.id?.id;
+  if (entityId && deptHoverMap.has(entityId)) {
+    const nombre = deptHoverMap.get(entityId);
+    deptInfoEl.textContent = nombre;
+    deptInfoEl.style.display = 'block';
+    deptInfoEl.style.left = x + 'px';
+    deptInfoEl.style.top  = y + 'px';
+    viewer.scene.canvas.style.cursor = 'default';
+  } else {
+    deptInfoEl.style.display = 'none';
+    viewer.scene.canvas.style.cursor = '';
+  }
 }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
 const tapHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
 tapHandler.setInputAction((click) => {
   const picked = viewer.scene.pick(click.position);
-  const x = Math.min(click.position.x + 16, window.innerWidth - 220);
+  const x = Math.min(click.position.x + 16, window.innerWidth - 240);
   const y = Math.max(click.position.y - 16, 10);
-  showFireTooltip(picked, x, y);
+  if (!showFireTooltip(picked, x, y)) {
+    showScarTooltip(picked, x, y);
+  } else {
+    scarInfoEl.style.display = 'none';
+  }
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
 // ── Auto-rotación (arranca pausada para mantener Córdoba a la vista) ─────────
@@ -541,6 +578,236 @@ document.getElementById('wayback-toggle').addEventListener('change', e => {
   document.getElementById(id).addEventListener('change', () => {
     if (waybackActive) aplicarWayback();
   });
+});
+
+// ── Cicatrices históricas (GEE · Sentinel-2 · dNBR) ────────────────────────
+function scarColor(sev) {
+  if (sev <= 2) return Cesium.Color.fromCssColorString('#ff9900');
+  if (sev === 3) return Cesium.Color.fromCssColorString('#ff5500');
+  return Cesium.Color.fromCssColorString('#ff1111');
+}
+
+function clearCicatrices() {
+  if (scarDataSource) {
+    viewer.dataSources.remove(scarDataSource, true);
+    scarDataSource = null;
+  }
+  scarInfoEl.style.display = 'none';
+}
+
+async function cargarCicatrices(year) {
+  const statusEl = document.getElementById('scar-status');
+  statusEl.textContent = 'Cargando...';
+  clearCicatrices();
+  try {
+    const ds = await Cesium.GeoJsonDataSource.load(
+      `data/incendios_${year}.geojson`,
+      { clampToGround: true }
+    );
+    let count = 0, nBosque = 0, nIdecor = 0;
+    for (const entity of ds.entities.values) {
+      if (!entity.polygon) continue;
+      const props     = entity.properties?.getValue(Cesium.JulianDate.now()) ?? {};
+      const bosque    = !!props.bosque_nativo;
+      const verificado = !!props.idecor_verificado;
+      const alpha     = verificado ? 0.70 : 0.55;
+      entity.polygon.material     = scarColor(props.severidad ?? 2).withAlpha(alpha);
+      entity.polygon.outline      = bosque;
+      entity.polygon.outlineColor = Cesium.Color.fromCssColorString('#00ff88').withAlpha(0.9);
+      entity.polygon.outlineWidth = 2;
+      count++;
+      if (bosque)    nBosque++;
+      if (verificado) nIdecor++;
+    }
+    viewer.dataSources.add(ds);
+    scarDataSource  = ds;
+    currentScarYear = year;
+    const bosqueNote = nBosque > 0 ? ` · ${nBosque} bosque nativo` : '';
+    statusEl.textContent = `Activo · ${count} polígonos · ${year}${bosqueNote}`;
+  } catch (e) {
+    statusEl.textContent = 'Error al cargar';
+    console.error('cicatrices:', e);
+  }
+}
+
+function showScarTooltip(picked, x, y) {
+  if (!Cesium.defined(picked) || !picked.id || !scarDataSource ||
+      !scarDataSource.entities.contains(picked.id)) {
+    scarInfoEl.style.display = 'none';
+    return false;
+  }
+  const props      = picked.id.properties?.getValue(Cesium.JulianDate.now()) ?? {};
+  const sev        = props.severidad ?? 2;
+  const label      = (props.severidad_label ?? '').replace(/_/g, '-');
+  const area       = props.area_ha ?? 0;
+  const yr         = props.year ?? currentScarYear;
+  const cols       = { 2: '#ff9900', 3: '#ff5500', 4: '#ff1111' };
+  const col        = cols[sev] || '#ff9900';
+  const bosque     = !!props.bosque_nativo;
+  const verificado = !!props.idecor_verificado;
+  const cobertura  = props.coberturas_idecor || '';
+  const localidad  = props.localidad_idecor  || '';
+
+  let html = `<strong style="color:${col}">Cicatriz &middot; ${yr}</strong>`;
+  if (bosque)
+    html += `<br><span style="color:#00ff88;font-weight:bold">&#x25CF; Bosque nativo quemado</span>`;
+  html += `<br><small>Severidad: ${label} (clase ${sev})<br>&Aacute;rea: ~${area} ha</small>`;
+  if (verificado) {
+    html += `<br><small style="color:#aaffcc">&#x2713; IDECOR verificado`;
+    if (localidad) html += ` &middot; ${localidad}`;
+    html += `</small>`;
+    if (cobertura)
+      html += `<br><small style="color:#cccccc">Cobertura: ${cobertura}</small>`;
+  }
+
+  scarInfoEl.innerHTML = html;
+  scarInfoEl.style.display = 'block';
+  scarInfoEl.style.left    = x + 'px';
+  scarInfoEl.style.top     = y + 'px';
+  viewer.scene.canvas.style.cursor = 'crosshair';
+  return true;
+}
+
+// ── Bosque nativo · WMS IDECOR ──────────────────────────────────────────────
+let otbnLayer = null;
+
+function cargarBosqueNativo() {
+  if (otbnLayer) return;
+  const provider = new Cesium.WebMapServiceImageryProvider({
+    url:    'https://idecor-ws.mapascordoba.gob.ar/geoserver/idecor/wms',
+    layers: 'idecor:mcv_ambiente_2023_2024_vectorizado',
+    parameters: {
+      format:      'image/png',
+      transparent: 'true',
+      CQL_FILTER:  "categoria LIKE 'Bosque%' OR categoria LIKE 'Matorral%'",
+    },
+  });
+  otbnLayer = viewer.imageryLayers.addImageryProvider(provider);
+  otbnLayer.alpha = 0.6;
+  document.getElementById('otbn-status').textContent  = 'Activo · IDECOR 2023/24';
+  document.getElementById('otbn-legend').style.display = 'block';
+}
+
+function limpiarBosqueNativo() {
+  if (otbnLayer) {
+    viewer.imageryLayers.remove(otbnLayer, true);
+    otbnLayer = null;
+  }
+  document.getElementById('otbn-status').textContent  = 'Inactivo';
+  document.getElementById('otbn-legend').style.display = 'none';
+}
+
+document.getElementById('otbn-toggle').addEventListener('change', e => {
+  if (e.target.checked) cargarBosqueNativo();
+  else limpiarBosqueNativo();
+});
+
+document.getElementById('scar-toggle').addEventListener('change', e => {
+  const controls = document.getElementById('scar-controls');
+  if (e.target.checked) {
+    controls.style.display = 'block';
+    cargarCicatrices(parseInt(document.getElementById('scar-year').value));
+  } else {
+    controls.style.display = 'none';
+    clearCicatrices();
+    document.getElementById('scar-status').textContent = 'Inactivo';
+  }
+});
+
+document.getElementById('scar-year').addEventListener('change', e => {
+  if (document.getElementById('scar-toggle').checked) {
+    cargarCicatrices(parseInt(e.target.value));
+  }
+});
+
+// ── División política · IGN (provincias) + IDECOR (departamentos Córdoba) ──
+let divPolProvLayer  = null;
+let divPolDeptSource = null;
+
+async function cargarDivisionPolitica() {
+  const statusEl = document.getElementById('divpol-status');
+  statusEl.textContent = 'Cargando...';
+
+  // 1. Provincias argentinas — WMS IGN (tile, sin CORS)
+  divPolProvLayer = viewer.imageryLayers.addImageryProvider(
+    new Cesium.WebMapServiceImageryProvider({
+      url:    'https://wms.ign.gob.ar/geoserver/ign/wms',
+      layers: 'provincia',
+      parameters: { format: 'image/png', transparent: 'true' },
+    })
+  );
+  divPolProvLayer.alpha = 0.75;
+
+  // 2. Departamentos de Córdoba — polylines (visibles) + polígonos invisibles (hover)
+  try {
+    const resp   = await fetch('data/departamentos_cordoba.geojson');
+    const geojson = await resp.json();
+    const deptDS  = new Cesium.CustomDataSource('departamentos');
+    deptHoverMap.clear();
+
+    for (const feat of geojson.features) {
+      const nombre = feat.properties?.nombre ?? '';
+      const geom   = feat.geometry;
+      const isMulti = geom.type === 'MultiPolygon';
+      const polys   = isMulti ? geom.coordinates : [geom.coordinates];
+
+      for (const poly of polys) {
+        // Polyline visible por cada anillo
+        for (const ring of poly) {
+          const flat = ring.flatMap(([lon, lat]) => [lon, lat]);
+          deptDS.entities.add({
+            polyline: {
+              positions:     Cesium.Cartesian3.fromDegreesArray(flat),
+              width:         1.5,
+              material:      Cesium.Color.WHITE.withAlpha(0.65),
+              clampToGround: true,
+            },
+          });
+        }
+
+        // Polígono invisible para pick (outer ring solamente)
+        if (nombre) {
+          const outerFlat = poly[0].flatMap(([lon, lat]) => [lon, lat]);
+          const e = deptDS.entities.add({
+            polygon: {
+              hierarchy: new Cesium.PolygonHierarchy(
+                Cesium.Cartesian3.fromDegreesArray(outerFlat)
+              ),
+              material: Cesium.Color.WHITE.withAlpha(0.01),
+              height:   0,
+            },
+          });
+          deptHoverMap.set(e.id, nombre);
+        }
+      }
+    }
+
+    viewer.dataSources.add(deptDS);
+    divPolDeptSource = deptDS;
+    statusEl.textContent = 'Activo · provincias + 26 departamentos';
+  } catch (e) {
+    console.error('divpol dept:', e);
+    statusEl.textContent = 'Activo · provincias cargadas';
+  }
+}
+
+function limpiarDivisionPolitica() {
+  if (divPolProvLayer) {
+    viewer.imageryLayers.remove(divPolProvLayer, true);
+    divPolProvLayer = null;
+  }
+  if (divPolDeptSource) {
+    viewer.dataSources.remove(divPolDeptSource, true);
+    divPolDeptSource = null;
+  }
+  deptHoverMap.clear();
+  deptInfoEl.style.display = 'none';
+  document.getElementById('divpol-status').textContent = 'Inactivo';
+}
+
+document.getElementById('divpol-toggle').addEventListener('change', e => {
+  if (e.target.checked) cargarDivisionPolitica();
+  else limpiarDivisionPolitica();
 });
 
 // ── Init: incendios activos al arrancar ────────────────────────────────────
