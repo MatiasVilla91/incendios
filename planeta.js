@@ -1,4 +1,6 @@
 // ── Cesium setup ──────────────────────────────────────────────────────────────
+Cesium.Ion.defaultAccessToken = '';  // no usamos Cesium ion, evita error 401
+
 const _creditDiv = document.createElement('div');
 _creditDiv.style.display = 'none';
 document.body.appendChild(_creditDiv);
@@ -1281,8 +1283,7 @@ function advanceScarYear() {
 document.getElementById('scar-play-btn').addEventListener('click', () => {
   if (scarAnimTimer) { stopScarAnimation(); return; }
   const btn = document.getElementById('scar-play-btn');
-  btn.textContent = '⏹';
-  btn.classList.add('playing');
+  if (btn) { btn.textContent = '⏹'; btn.classList.add('playing'); }
   const sel = document.getElementById('scar-year');
   sel.value = '2018';
   sel.dispatchEvent(new Event('change'));
