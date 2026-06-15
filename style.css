@@ -565,6 +565,86 @@ hr { border: none; border-top: 1px solid var(--border); }
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
 
+/* ── Badge desarrollador (abajo izquierda, sobre el panel) ── */
+#dev-badge {
+  position: fixed;
+  bottom: 20px;
+  left: 272px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 7px 12px;
+  background: rgba(13, 17, 23, 0.78);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-mid);
+  border-left: 2px solid var(--accent);
+  border-radius: 6px;
+  z-index: 90;
+}
+#dev-badge-sub {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  line-height: 1;
+}
+#dev-badge-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+  line-height: 1.4;
+  transition: color 0.15s;
+}
+#dev-badge-name:hover { color: var(--accent); }
+#dev-badge-arrow {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* ── Tarjeta de autor en el panel ── */
+#author-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 16px 16px;
+  padding: 11px 14px;
+  background: linear-gradient(135deg, rgba(224,93,0,0.1) 0%, rgba(224,93,0,0.04) 100%);
+  border: 1px solid rgba(224, 93, 0, 0.3);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+#author-card:hover {
+  background: linear-gradient(135deg, rgba(224,93,0,0.18) 0%, rgba(224,93,0,0.08) 100%);
+  border-color: var(--accent);
+}
+#author-card-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 2px;
+}
+#author-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+}
+#author-card-arrow {
+  font-size: 18px;
+  color: var(--accent);
+  opacity: 0.7;
+  transition: opacity 0.15s, transform 0.15s;
+}
+#author-card:hover #author-card-arrow {
+  opacity: 1;
+  transform: translate(2px, -2px);
+}
+
 /* ── Atribución ── */
 #map-attr {
   position: fixed;
@@ -695,13 +775,8 @@ details > #stats { margin-top: 4px; }
 #scar-legend   { margin-top: 8px; }
 #scar-legend .leyenda-item { margin-bottom: 4px; }
 
-.scar-year-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
+.scar-year-row { display: flex; gap: 6px; align-items: center; }
 .scar-year-row select { flex: 1; }
-
 #scar-play-btn {
   background: var(--bg-panel-mid);
   border: 1px solid var(--border-mid);
@@ -755,8 +830,35 @@ details > #stats { margin-top: 4px; }
   color: var(--text-muted);
 }
 
+/* ── Exportar ── */
+.export-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.export-btn {
+  flex: 1;
+  padding: 8px 6px;
+  background: var(--bg-panel-mid);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.export-btn:hover {
+  background: rgba(224, 93, 0, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ── Mobile ── */
 @media (max-width: 640px) {
+  #dev-badge { display: none; }
+
   #panel {
     width: 100%;
     height: auto;

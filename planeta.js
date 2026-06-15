@@ -35,6 +35,33 @@ viewer.camera.setView({
   orientation: { heading: 0, pitch: Cesium.Math.toRadians(-90), roll: 0 },
 });
 
+// ── Restricción geográfica: trabar mapa en Córdoba ───────────────────────────
+const CAM_BOUNDS = {
+  west:  Cesium.Math.toRadians(-67.0),
+  east:  Cesium.Math.toRadians(-60.0),
+  south: Cesium.Math.toRadians(-37.0),
+  north: Cesium.Math.toRadians(-28.0),
+};
+const CAM_MIN_H =    8_000;   // 8 km — zoom máximo
+const CAM_MAX_H = 1_400_000;  // 1400 km — alcanza para ver toda la provincia
+
+viewer.scene.screenSpaceCameraController.minimumZoomDistance = CAM_MIN_H;
+viewer.scene.screenSpaceCameraController.maximumZoomDistance = CAM_MAX_H;
+
+viewer.camera.percentageChanged = 0.001;
+viewer.camera.changed.addEventListener(() => {
+  const pos = viewer.camera.positionCartographic;
+  const lon = Cesium.Math.clamp(pos.longitude, CAM_BOUNDS.west,  CAM_BOUNDS.east);
+  const lat = Cesium.Math.clamp(pos.latitude,  CAM_BOUNDS.south, CAM_BOUNDS.north);
+  const h   = Cesium.Math.clamp(pos.height,    CAM_MIN_H,        CAM_MAX_H);
+  if (lon !== pos.longitude || lat !== pos.latitude || h !== pos.height) {
+    viewer.camera.setView({
+      destination: Cesium.Cartesian3.fromRadians(lon, lat, h),
+      orientation: { heading: viewer.camera.heading, pitch: viewer.camera.pitch, roll: 0 },
+    });
+  }
+});
+
 // ── Graticule ─────────────────────────────────────────────────────────────────
 for (let lat = -60; lat <= 60; lat += 30) {
   const pts = [];
@@ -145,7 +172,8 @@ async function cargarVientos() {
       direction: d.current?.wind_direction_10m ?? 0,
     })));
 
-    statusEl.textContent = `Activo · ${arr.length} puntos`;
+    const horaWind = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    statusEl.textContent = `${arr.length} puntos · act. ${horaWind}`;
   } catch (e) {
     statusEl.textContent = 'Error al cargar';
   }
@@ -259,9 +287,10 @@ async function cargarIncendios() {
     }
     const data = parseFirmsCSV(text);
     createFireMarkers(data);
+    const horaFire = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
     statusEl.textContent = data.length
-      ? `Activo · ${data.length} focos · últimos ${FIRMS_DAYS}d`
-      : `Sin focos en los últimos ${FIRMS_DAYS}d (invierno: temporada baja)`;
+      ? `${data.length} focos · últ. ${FIRMS_DAYS}d · act. ${horaFire}`
+      : `Sin focos · últ. ${FIRMS_DAYS}d · act. ${horaFire}`;
   } catch (e) {
     statusEl.textContent = 'Error de red/proxy — reintentá';
   }
@@ -273,7 +302,9 @@ const scarInfoEl = document.getElementById('scar-info');
 const deptInfoEl = document.getElementById('dept-info');
 let   scarDataSource  = null;
 let   currentScarYear = 2024;
-let   _currentScarData = null;
+let   _currentScarData    = null;
+let   _casosAlertaData    = null;
+let   _lastClaudeAnalysis = null;
 const deptHoverMap    = new Map(); // entity.id → nombre del departamento
 const loteoInfoEl     = document.getElementById('loteo-info');
 let   loteosDataSource = null;
@@ -430,8 +461,6 @@ tapHandler.setInputAction((click) => {
   }
 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-// ── Auto-rotación (arranca pausada para mantener Córdoba a la vista) ─────────
-let rotacionPausada = true;
 let _interactTimer  = null;
 let isInteracting   = false;
 
@@ -452,18 +481,7 @@ viewer.scene.postRender.addEventListener(() => {
     ? `INCENDIOS CÓRDOBA · ALT ${(alt / 1000).toFixed(0)} KM`
     : 'INCENDIOS CÓRDOBA · NASA FIRMS · OPEN-METEO · EN LÍNEA';
 
-  if (rotacionPausada || isInteracting) return;
-  viewer.camera.rotate(Cesium.Cartesian3.UNIT_Z, -0.0001);
-});
-
-// ── Botón pausa ───────────────────────────────────────────────────────────────
-const pauseBtn = document.getElementById('pause-btn');
-pauseBtn.textContent = rotacionPausada ? '▶' : '⏸';
-pauseBtn.title       = rotacionPausada ? 'Reanudar rotación' : 'Pausar rotación';
-pauseBtn.addEventListener('click', () => {
-  rotacionPausada = !rotacionPausada;
-  pauseBtn.textContent = rotacionPausada ? '▶' : '⏸';
-  pauseBtn.title = rotacionPausada ? 'Reanudar rotación' : 'Pausar rotación';
+  if (isInteracting) return;
 });
 
 // ── Controles del panel ───────────────────────────────────────────────────────
@@ -1265,7 +1283,6 @@ document.getElementById('scar-play-btn').addEventListener('click', () => {
   const btn = document.getElementById('scar-play-btn');
   btn.textContent = '⏹';
   btn.classList.add('playing');
-  // Empieza desde 2018
   const sel = document.getElementById('scar-year');
   sel.value = '2018';
   sel.dispatchEvent(new Event('change'));
@@ -1278,7 +1295,8 @@ async function poblarCasosAlerta() {
   try {
     const resp = await fetch('data/casos_alerta.json');
     if (!resp.ok) throw new Error('sin datos');
-    const casos = await resp.json();
+    _casosAlertaData = await resp.json();
+    const casos = _casosAlertaData;
 
     listEl.innerHTML = '';
     for (const c of casos) {
@@ -1431,6 +1449,7 @@ async function runClaudeAnalysis() {
     }
     const result = await resp.json();
     const text   = result.content?.[0]?.text || '(sin respuesta)';
+    _lastClaudeAnalysis = text;
     content.innerHTML = formatClaudeText(text);
   } catch (e) {
     content.innerHTML = `<p class="claude-error">Error: ${e.message}</p>`;
@@ -1508,3 +1527,175 @@ function formatClaudeText(raw) {
 document.getElementById('claude-close-btn').addEventListener('click', () => {
   document.getElementById('claude-panel').style.display = 'none';
 });
+
+// ── Auto-refresh de datos en tiempo real ─────────────────────────────────────
+const REFRESH_FIRES_MS = 15 * 60 * 1000;  // focos FIRMS: cada 15 min
+const REFRESH_WIND_MS  = 20 * 60 * 1000;  // viento Open-Meteo: cada 20 min
+
+setInterval(() => {
+  if (document.getElementById('fire-toggle').checked) cargarIncendios();
+}, REFRESH_FIRES_MS);
+
+setInterval(() => {
+  if (document.getElementById('wind-toggle').checked) cargarVientos();
+}, REFRESH_WIND_MS);
+
+// ── Exportar datos ────────────────────────────────────────────────────────────
+function _propVal(props, name) {
+  try { return props[name]?.getValue() ?? ''; } catch { return ''; }
+}
+
+function exportarExcel() {
+  if (typeof XLSX === 'undefined') {
+    alert('La librería Excel aún se está cargando, intentá en unos segundos.');
+    return;
+  }
+  const wb = XLSX.utils.book_new();
+
+  // Hoja 1: Casos de alerta
+  if (_casosAlertaData && _casosAlertaData.length > 0) {
+    const rows = _casosAlertaData.map((c, i) => ({
+      '#':                     i + 1,
+      'Año':                   c.year,
+      'Localidad':             c.localidad || '',
+      'Área (ha)':             c.area_ha,
+      'Bosque nativo':         c.bosque_nativo   ? 'SÍ' : 'no',
+      'Loteo post-incendio':   c.loteo_post      ? 'SÍ' : 'no',
+      'Loteo superpuesto':     c.loteo_sup       ? 'SÍ' : 'no',
+      'Desarrollo alto valor': c.osm_alto_valor  ? c.osm_tipo : 'no',
+      'Nombre loteo':          c.nombre_loteo    || '',
+      'Recurrencia':           c.recurrencia > 1 ? `${c.recurrencia}x` : 'no',
+      'Score':                 c.score,
+      'Latitud':               c.lat,
+      'Longitud':              c.lon,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [4,6,22,10,14,18,16,22,22,12,7,10,10].map(w => ({ wch: w }));
+    XLSX.utils.book_append_sheet(wb, ws, 'Casos de alerta');
+  }
+
+  // Hoja 2: Cicatrices del año visible
+  if (scarDataSource) {
+    const rows = [];
+    for (const e of scarDataSource.entities.values) {
+      const p = e.properties;
+      if (!p) continue;
+      rows.push({
+        'Año':                 currentScarYear,
+        'Área (ha)':           _propVal(p, 'area_ha'),
+        'Severidad':           _propVal(p, 'severidad_label'),
+        'Bosque nativo':       _propVal(p, 'bosque_nativo')       ? 'SÍ' : 'no',
+        'Verificado IDECOR':   _propVal(p, 'idecor_verificado')   ? 'SÍ' : 'no',
+        'Cobertura':           _propVal(p, 'cobertura'),
+        'Localidad':           _propVal(p, 'localidad_idecor'),
+        'Departamento':        _propVal(p, 'departamento_idecor'),
+        'Loteo post-incendio': _propVal(p, 'loteo_post_incendio') ? 'SÍ' : 'no',
+        'Loteo superpuesto':   _propVal(p, 'loteo_superpuesto')   ? 'SÍ' : 'no',
+        'Nombre loteo':        _propVal(p, 'nombre_loteo'),
+        'OSM tipo':            _propVal(p, 'osm_tipo'),
+      });
+    }
+    if (rows.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, `Cicatrices ${currentScarYear}`);
+    }
+  }
+
+  XLSX.writeFile(wb, `incendios_cordoba_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+function exportarPDF() {
+  if (typeof window.jspdf === 'undefined') {
+    alert('La librería PDF aún se está cargando, intentá en unos segundos.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc   = new jsPDF({ unit: 'mm', format: 'a4' });
+  const fecha = new Date().toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  // Encabezado oscuro
+  doc.setFillColor(13, 17, 23);
+  doc.rect(0, 0, 210, 38, 'F');
+  doc.setTextColor(224, 93, 0);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text('Incendios Córdoba', 14, 17);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(139, 148, 158);
+  doc.text(`Generado el ${fecha}  ·  NASA FIRMS · Sentinel-2 GEE · IDECOR · OSM`, 14, 25);
+  doc.text('github.com/MatiasVilla91/incendios', 14, 32);
+
+  let y = 46;
+
+  // Análisis IA si hay uno disponible
+  if (_lastClaudeAnalysis) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.text('Análisis IA — Última cicatriz analizada', 14, y);
+    y += 4;
+    doc.setDrawColor(224, 93, 0);
+    doc.setLineWidth(0.4);
+    doc.line(14, y, 196, y);
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(60, 60, 60);
+    const clean = _lastClaudeAnalysis.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,3} /g, '');
+    for (const line of doc.splitTextToSize(clean, 182)) {
+      if (y > 274) { doc.addPage(); y = 18; }
+      doc.text(line, 14, y);
+      y += 4.5;
+    }
+    y += 8;
+  }
+
+  // Tabla de casos de alerta
+  if (_casosAlertaData && _casosAlertaData.length > 0) {
+    if (y > 240) { doc.addPage(); y = 18; }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.text('Casos de alerta 🚨', 14, y);
+    y += 4;
+    doc.setDrawColor(220, 38, 38);
+    doc.setLineWidth(0.4);
+    doc.line(14, y, 196, y);
+    y += 2;
+
+    doc.autoTable({
+      startY: y,
+      head: [['#', 'Año', 'Localidad', 'Área (ha)', 'Señales', 'Score']],
+      body: _casosAlertaData.map((c, i) => {
+        const tags = [];
+        if (c.recurrencia > 1) tags.push(`${c.recurrencia}x quemada`);
+        if (c.bosque_nativo)   tags.push('bosque nativo');
+        if (c.loteo_post)      tags.push('loteo post-incendio');
+        if (c.osm_alto_valor)  tags.push(c.osm_tipo);
+        return [
+          i + 1, c.year,
+          c.localidad || '-',
+          c.area_ha.toLocaleString('es-AR'),
+          tags.join(' · ') || '-',
+          c.score,
+        ];
+      }),
+      styles:             { fontSize: 8, cellPadding: 2 },
+      headStyles:         { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      columnStyles:       { 0: { cellWidth: 8 }, 1: { cellWidth: 13 }, 5: { cellWidth: 14, halign: 'center' } },
+    });
+  }
+
+  // Pie de página en cada hoja
+  const totalPags = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPags; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(180);
+    doc.text(`Incendios Córdoba  ·  ${fecha}  ·  pág. ${i} de ${totalPags}`, 14, 291);
+  }
+
+  doc.save(`incendios_cordoba_${new Date().toISOString().slice(0, 10)}.pdf`);
+}

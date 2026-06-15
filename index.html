@@ -254,6 +254,15 @@
       </details>
 
       <details>
+        <summary>Exportar datos</summary>
+        <div class="export-row">
+          <button class="export-btn" onclick="exportarExcel()">📊 Excel</button>
+          <button class="export-btn" onclick="exportarPDF()">📄 PDF</button>
+        </div>
+        <small class="risk-disclaimer">Casos de alerta · cicatrices del año visible · análisis IA si hiciste uno</small>
+      </details>
+
+      <details>
         <summary>Vista</summary>
         <div class="control-group">
           <button id="center-btn">Centrar en Córdoba</button>
@@ -261,6 +270,16 @@
       </details>
 
     </div>
+
+    </div>
+
+    <a id="author-card" href="https://msv18dev.vercel.app" target="_blank" rel="noopener">
+      <div id="author-card-left">
+        <div id="author-card-label">Desarrollado por</div>
+        <div id="author-card-name">Matías Villa</div>
+      </div>
+      <div id="author-card-arrow">↗</div>
+    </a>
   </div>
 
   <!-- Botón abrir panel -->
@@ -269,7 +288,6 @@
   <!-- Controles inferiores: zoom + pausa + panel (mobile) -->
   <div id="bottom-controls">
     <button id="zoom-out"       title="Alejar">−</button>
-    <button id="pause-btn"      title="Pausar rotación">⏸</button>
     <button id="zoom-in"        title="Acercar">+</button>
     <button id="panel-btn-mob"  title="Panel">☰</button>
   </div>
@@ -327,8 +345,17 @@
     &nbsp;&middot;&nbsp; <a href="https://cesium.com" target="_blank">CesiumJS</a>
   </div>
 
+  <!-- Badge desarrollador -->
+  <div id="dev-badge">
+    <span id="dev-badge-sub">Desarrollado por</span>
+    <a id="dev-badge-name" href="https://msv18dev.vercel.app" target="_blank" rel="noopener">Matías Villa <span id="dev-badge-arrow">↗</span></a>
+  </div>
+
   <script>window.CESIUM_BASE_URL = 'https://unpkg.com/cesium@1.120.0/Build/Cesium/';</script>
   <script src="https://unpkg.com/cesium@1.120.0/Build/Cesium/Cesium.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="planeta.js"></script>
 
 </body>
