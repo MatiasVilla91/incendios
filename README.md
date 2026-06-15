@@ -1,114 +1,70 @@
-# Incendios Córdoba — Monitor de focos de calor 3D
+# Incendios Córdoba
 
-Visualizador interactivo de incendios activos sobre las Sierras de Córdoba, en un globo 3D. Muestra los focos de calor de **NASA FIRMS** (satélite VIIRS) casi en tiempo real y, opcionalmente, los **vientos** que condicionan la propagación del fuego. Corre 100% en el navegador, sin backend.
+Mapa interactivo 3D de incendios en la provincia de Córdoba, Argentina (2018–2025).  
+Cruza datos satelitales con información territorial para detectar patrones sospechosos de incendios intencionales vinculados a cambios ilegales de uso del suelo.
 
-> Primera fase de un proyecto de transparencia ambiental más amplio: cruzar incendios con cambio de uso del suelo y el Ordenamiento Territorial de Bosque Nativo (Ley 26.331). Ver `INCENDIOS_ROADMAP.md`.
-
----
-
-## Características
-
-| Módulo | Descripción |
-|---|---|
-| **Globo 3D** | Planeta con textura satelital real, centrado en las Sierras de Córdoba al iniciar |
-| **Focos de incendio** | Focos de calor VIIRS 375 m de NASA FIRMS · selector de período (24 h a 10 días) · color según intensidad (FRP) · tooltip con detalle al pasar el mouse |
-| **Vientos** | Flechas vectoriales sobre Córdoba con datos en tiempo real de Open-Meteo (viento a 10 m) |
+**Demo:** https://matiasvilla91.github.io/incendios/  
+**Desarrollador:** [Matías Villa](https://msv18dev.vercel.app)
 
 ---
 
-## Cómo ejecutar
+## Hipótesis
 
-```bash
-npx live-server
-```
-
-Abre `http://localhost:8080` en el navegador. No requiere instalar dependencias de frontend.
+Algunos incendios en Córdoba no son accidentales. Se utilizan para degradar bosque nativo protegido por la Ley 9814 y habilitar cambios de uso del suelo — principalmente loteos y emprendimientos inmobiliarios (countries, campos de golf, resorts). La app cruza cicatrices de incendio con loteos municipales, bosque nativo OTBN, datos OSM y recurrencia histórica para detectar estas situaciones.
 
 ---
 
-## Configurar la API key de FIRMS
+## Capas del mapa
 
-Los focos de incendio vienen de NASA FIRMS, que requiere una *map key* gratuita:
-
-1. Pedila en <https://firms.modaps.eosdis.nasa.gov/api/map_key/> (te llega al instante).
-2. En `planeta.js`, reemplazá el valor de `FIRMS_MAP_KEY` por tu key.
-
-Si la key falta o es inválida, el panel muestra "Falta map key".
-
----
-
-## Histórico de cicatrices (pipeline GEE — Fase 3)
-
-`fire_scars_pipeline.py` genera un archivo GeoJSON con los polígonos de área quemada
-año por año (2018–presente) usando Sentinel-2 y Google Earth Engine.
-
-### 1. Instalar dependencias Python
-
-```bash
-pip install earthengine-api
-```
-
-### 2. Autenticar GEE (una sola vez)
-
-Necesitás un proyecto de Google Cloud gratuito (no comercial).
-Registralo en <https://earthengine.google.com> → **Get Started**.
-
-```bash
-earthengine authenticate --project TU_PROYECTO_CLOUD
-```
-
-Esto abre el navegador, pedís permiso con tu cuenta Google, y guarda credenciales
-en `~/.config/earthengine/credentials`. No hace falta repetirlo.
-
-### 3. Generar los GeoJSONs localmente
-
-```bash
-# Todos los años (2018–hoy), escala 100 m — primera pasada rápida:
-python fire_scars_pipeline.py --project TU_PROYECTO_CLOUD
-
-# Solo un año, más detalle:
-python fire_scars_pipeline.py --project TU_PROYECTO_CLOUD --years 2024 --scale 50
-
-# Pasar el proyecto por variable de entorno:
-export GEE_PROJECT=TU_PROYECTO_CLOUD
-python fire_scars_pipeline.py
-```
-
-Salida:
-- `data/incendios_{año}.geojson` — polígonos por año
-- `incendios_historico.geojson` — todos fusionados (para el visualizador)
-
-### 4. Exportar a Google Drive (para alta resolución o años con muchos incendios)
-
-Si `getInfo()` agota el tiempo (años como 2024 con 100 000+ ha quemadas):
-
-```bash
-python fire_scars_pipeline.py --project TU_PROYECTO_CLOUD --mode drive --scale 20
-```
-
-Monitorear tareas en <https://code.earthengine.google.com/tasks>.
-Cuando terminen, descargá los GeoJSONs de Drive y copiálos a `data/`.
-
-### Parámetros disponibles
-
-| Flag | Default | Descripción |
+| Capa | Fuente | Descripción |
 |---|---|---|
-| `--project` | `$GEE_PROJECT` | ID del proyecto Google Cloud |
-| `--mode` | `local` | `local` (getInfo) o `drive` (exportar a Drive) |
-| `--years` | 2018–hoy | Años a procesar, ej. `--years 2020 2024` |
-| `--scale` | `100` | Resolución en metros (menor = más lento y detallado) |
-| `--min-area` | `1.0` | Área mínima de polígono en hectáreas |
+| **Focos de incendio** | NASA FIRMS / VIIRS | Focos activos en tiempo casi real · color según potencia (FRP) · se actualiza cada 15 min |
+| **Vientos** | Open-Meteo | Flechas vectoriales a 10 m · se actualiza cada 20 min |
+| **Cicatrices históricas** | Sentinel-2 / GEE / dNBR | Polígonos de área quemada 2018–2025 · severidad · cruzados con IDECOR, OTBN y loteos |
+| **Recurrencia** | Calculado localmente | Zonas quemadas 2+ veces en el mismo lugar · indica posible intencionalidad |
+| **Bosque nativo** | IDECOR 2023/24 | Cobertura forestal nativa · zonas I (rojo), II (amarillo), III (verde) de la Ley de Bosques |
+| **División política** | IGN / IDECOR | Provincias argentinas y 26 departamentos de Córdoba con etiquetas |
+| **Desarrollo urbano** | OpenStreetMap | Urbanizaciones, barrios privados, campos de golf, resorts que coinciden con cicatrices |
+| **Loteos municipales** | IDECOR | Loteos aprobados y autorizados · detecta loteos posteriores al incendio |
+| **Casos de alerta** | Calculado localmente | Top 20 cicatrices más sospechosas rankeadas por score de alerta |
+| **Análisis IA** | Claude (Anthropic) | Evaluación por IA de cada cicatriz o zona de recurrencia al hacer clic |
+| **Comparador temporal** | Esri Wayback | Imágenes satelitales históricas para comparar antes/después del incendio |
 
-### Lógica del cálculo
+---
+
+## Funcionalidades
+
+- **Análisis por IA**: hacé clic en cualquier cicatriz o zona de recurrencia → botón "Analizar con IA" → Claude analiza señales de alerta (bosque nativo, loteos, recurrencia, desarrollos de alto valor)
+- **Casos de alerta**: ranking de las 20 cicatrices más sospechosas por score compuesto
+- **Animación por año**: selector y botón ▶ para recorrer 2018–2025
+- **Exportar**: descargá los datos en Excel (.xlsx) o PDF con el reporte completo incluyendo el análisis IA
+- **Auto-refresh**: focos FIRMS y viento se actualizan solos sin recargar la página
+- **Mapa restringido a Córdoba**: la cámara no puede salir de los límites de la provincia
+
+---
+
+## Arquitectura
 
 ```
-NBR  = (B8 − B12) / (B8 + B12)   ← banda NIR y SWIR2 de Sentinel-2
-dNBR = NBR_antes − NBR_después    ← positivo = pérdida de vegetación
+Browser (GitHub Pages)
+    │
+    ├── index.html / planeta.js / style.css
+    │       │
+    │       ├── NASA FIRMS API → focos activos (cada 15 min)
+    │       ├── Open-Meteo API → viento (cada 20 min)
+    │       ├── Esri ArcGIS → imágenes satelitales base
+    │       ├── Esri Wayback → imágenes históricas
+    │       ├── IDECOR WFS → departamentos, loteos
+    │       └── data/*.geojson → cicatrices, recurrencia, casos de alerta
+    │
+    └── Cloudflare Worker (proxy)
+            └── Anthropic API (Claude Haiku) → análisis IA
 
-Severidad exportada (dNBR sin escalar):
-  clase 2 — moderada-baja  [0.27–0.44]
-  clase 3 — moderada-alta  [0.44–0.66]
-  clase 4 — severa         [>0.66]
+Pipeline local (Python)
+    fire_scars_pipeline.py → Google Earth Engine → data/incendios_{año}.geojson
+    generar_recurrencia.py → data/recurrencia.geojson
+    generar_coincidencias.py → data/coincidencias_osm.json
+    generar_casos_alerta.py → data/casos_alerta.json
 ```
 
 ---
@@ -117,55 +73,179 @@ Severidad exportada (dNBR sin escalar):
 
 ```
 proyecto-planeta/
-├── index.html                   # HUD, panel de control, leyendas
-├── planeta.js                   # Globo CesiumJS: focos FIRMS, vientos
-├── style.css                    # Estética radar de nave espacial
-├── earth.jpg                    # Textura del planeta
-├── gee_nbr_sierras.js           # GEE (JS): cicatriz de un año en el editor web
-├── fire_scars_pipeline.py       # GEE (Python): histórico 2018–presente → GeoJSON
-├── incendios_historico.geojson  # Salida fusionada del pipeline (generado)
-├── data/                        # GeoJSONs por año (generados)
-├── INCENDIOS_ROADMAP.md         # Plan por fases del proyecto de transparencia
-└── README.md                    # Este archivo
+├── index.html                    # Estructura HTML, panel de control, tooltips
+├── planeta.js                    # Lógica principal: CesiumJS, capas, IA, exportación
+├── style.css                     # Estética dark / estilo radar
+│
+├── cloudflare-worker/
+│   └── worker.js                 # Proxy para la API de Anthropic (key server-side)
+│
+├── .github/workflows/
+│   └── actualizar-datos.yml      # GitHub Action: regenera recurrencia y casos cada lunes
+│
+├── data/                         # GeoJSONs servidos por GitHub Pages
+│   ├── incendios_{2018..2025}.geojson   # Cicatrices por año (generadas por pipeline)
+│   ├── recurrencia.geojson              # Zonas quemadas 2+ veces
+│   ├── casos_alerta.json                # Top 20 casos más sospechosos
+│   ├── coincidencias_osm.json           # OSM que coincide con cicatrices
+│   ├── departamentos_cordoba.geojson    # Límites de departamentos
+│   ├── loteos_aprobados.geojson         # Loteos municipales
+│   ├── loteos_autorizados.geojson
+│   ├── osm_desarrollo.geojson           # Desarrollos OSM
+│   └── area_quemada_{año}.geojson       # Área quemada anual para comparador
+│
+├── fire_scars_pipeline.py        # Pipeline GEE: genera incendios_{año}.geojson
+├── generar_recurrencia.py        # Calcula zonas de recurrencia
+├── generar_coincidencias.py      # Cruza cicatrices con OSM
+├── generar_casos_alerta.py       # Rankea cicatrices por score de alerta
+├── enrich_with_idecor.py         # Enriquece cicatrices con datos IDECOR
+├── enrich_osm.py                 # Enriquece cicatrices con datos OSM
+├── agregar_loteos.py             # Cruza cicatrices con loteos municipales
+└── gee_nbr_sierras.js            # Script GEE (editor web) para exploración manual
 ```
 
 ---
 
-## Configuración (en `planeta.js`)
+## Setup local
 
-| Constante | Qué hace | Valor por defecto |
+```bash
+npx live-server
+# Abre http://localhost:8080
+```
+
+No requiere instalación de dependencias de frontend (CesiumJS se carga desde CDN).
+
+---
+
+## Pipeline de datos (Python + GEE)
+
+### 1. Instalar dependencias
+
+```bash
+pip install earthengine-api shapely
+```
+
+### 2. Autenticar Google Earth Engine (una sola vez)
+
+Necesitás un proyecto Google Cloud registrado en https://earthengine.google.com
+
+```bash
+earthengine authenticate --project TU_PROYECTO_CLOUD
+```
+
+### 3. Generar cicatrices históricas
+
+```bash
+python fire_scars_pipeline.py --project TU_PROYECTO_CLOUD
+# Genera: data/incendios_2018.geojson ... data/incendios_2025.geojson
+
+# Solo un año con más detalle:
+python fire_scars_pipeline.py --project TU_PROYECTO_CLOUD --years 2024 --scale 50
+
+# Para años pesados (2024 = 100.000+ ha), exportar a Google Drive:
+python fire_scars_pipeline.py --project TU_PROYECTO_CLOUD --mode drive --scale 20
+```
+
+### 4. Enriquecer y calcular capas derivadas
+
+```bash
+python enrich_with_idecor.py      # agrega bosque nativo, departamento, localidad
+python agregar_loteos.py          # agrega loteo_post_incendio, loteo_superpuesto
+python enrich_osm.py              # agrega osm_tipo, osm_nombre
+python generar_recurrencia.py     # genera data/recurrencia.geojson
+python generar_coincidencias.py   # genera data/coincidencias_osm.json
+python generar_casos_alerta.py    # genera data/casos_alerta.json
+```
+
+### 5. Commitear y pushear
+
+```bash
+git add data/
+git commit -m "actualizar datos"
+git push
+# GitHub Pages despliega en ~2 minutos
+```
+
+---
+
+## Score de alerta (casos_alerta.json)
+
+| Señal | Puntos |
+|---|---|
+| Bosque nativo quemado | +30 |
+| Loteo municipal **posterior** al incendio | +50 |
+| Loteo municipal superpuesto | +20 |
+| Desarrollo de alto valor en la zona (golf, resort, hotel, estancia) | +15 |
+| Área quemada (hasta 20.000 ha) | +1 por cada 1.000 ha |
+| Recurrencia (zona quemada antes) | +25 por cada incendio adicional |
+
+---
+
+## Cálculo de cicatrices (dNBR)
+
+```
+NBR  = (B8 − B12) / (B8 + B12)   ← NIR y SWIR2 de Sentinel-2
+dNBR = NBR_antes − NBR_después    ← positivo = pérdida de vegetación
+
+Severidad:
+  clase 2 — moderada-baja   dNBR [0.27 – 0.44]
+  clase 3 — moderada-alta   dNBR [0.44 – 0.66]
+  clase 4 — severa          dNBR > 0.66
+```
+
+---
+
+## Proxy Cloudflare Worker (API key de Anthropic)
+
+La API key de Claude **nunca aparece en el código público**. Vive como secreto en Cloudflare.
+
+El código del Worker está en `cloudflare-worker/worker.js`.
+
+**Para configurar:**
+1. Crear Worker en dash.cloudflare.com → Workers & Pages → Create Worker
+2. Pegar el contenido de `cloudflare-worker/worker.js`
+3. Settings → Variables and Secrets → agregar secreto `ANTHROPIC_KEY` con la API key
+4. Copiar la URL del worker y actualizar `WORKER_URL` en `planeta.js`
+
+---
+
+## Actualización automática de datos
+
+**Datos en tiempo real** (automático, client-side):
+- Focos FIRMS: cada 15 minutos
+- Viento: cada 20 minutos
+
+**Datos históricos** (GitHub Action):
+- `.github/workflows/actualizar-datos.yml` corre cada lunes a las 6 AM UTC
+- Regenera `recurrencia.geojson` y `casos_alerta.json` a partir de los GeoJSON existentes
+- Commitea y pushea automáticamente si hay cambios
+
+**Cicatrices nuevas** (manual):
+- Requiere correr `fire_scars_pipeline.py` localmente con acceso a GEE
+- No automatizable sin cuenta de servicio GEE
+
+---
+
+## APIs y fuentes de datos
+
+| Fuente | Uso | Key requerida |
 |---|---|---|
-| `FIRMS_MAP_KEY` | Tu map key de NASA FIRMS | *(reemplazar)* |
-| `FIRMS_SOURCE` | Sensor satelital | `VIIRS_SNPP_NRT` |
-| `FIRMS_AREA` | Caja geográfica `oeste,sur,este,norte` | `-66,-35.2,-61.5,-29.4` (Córdoba) |
-| `FIRMS_DAYS` | Días hacia atrás (1–10) | `3` (lo cambian los botones del panel) |
-| `CORDOBA` | Centro inicial de la cámara | `-31.4, -64.5` |
-
-Para monitorear otra región, cambiá `FIRMS_AREA` y `CORDOBA`.
-
----
-
-## APIs externas
-
-### NASA FIRMS (Fire Information for Resource Management System)
-- **Endpoint:** `https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/{source}/{area}/{days}`
-- **Map key gratuita.** Límite: 5000 transacciones / 10 min.
-- **Sensor:** VIIRS S-NPP 375 m, tiempo casi real (NRT).
-- **Campos usados:** `latitude`, `longitude`, `frp`, `confidence`, `acq_date`, `acq_time`.
-
-### Open-Meteo
-- **Endpoint:** `https://api.open-meteo.com/v1/forecast`
-- **Sin API key.**
-- **Campos usados:** `wind_speed_10m`, `wind_direction_10m`.
+| NASA FIRMS | Focos activos VIIRS | Gratuita en firms.modaps.eosdis.nasa.gov |
+| Open-Meteo | Viento en tiempo real | No |
+| Google Earth Engine | Generación de cicatrices (pipeline) | Cuenta Google + proyecto Cloud |
+| Esri ArcGIS / Wayback | Imágenes satelitales | No |
+| IDECOR WFS | Departamentos, loteos, bosque nativo | No |
+| OpenStreetMap | Urbanizaciones, desarrollos | No |
+| Anthropic (Claude Haiku) | Análisis IA | Sí — vive en Cloudflare Worker |
 
 ---
 
-## Qué muestra y qué no
+## Despliegue
 
-**FRP (Fire Radiative Power)** es la potencia radiativa del fuego en megavatios: un proxy de intensidad, no de superficie quemada. Los focos VIIRS detectan calor en el momento del paso del satélite — un incendio puede no aparecer si pasó nublado o si el satélite no sobrevoló esa franja en la ventana elegida. Para el área quemada (cicatriz) se usa el análisis Sentinel-2 / dNBR del script `gee_nbr_sierras.js`.
+El mapa corre 100% estático desde GitHub Pages.
 
----
+1. `git push` a `main`
+2. GitHub → Settings → Pages → Source: `main` / `/ (root)`
+3. URL: `https://matiasvilla91.github.io/incendios/`
 
-## Créditos de datos
-
-NASA FIRMS · Open-Meteo · Esri World Imagery · CesiumJS.
+Cada push despliega automáticamente en ~2 minutos.
