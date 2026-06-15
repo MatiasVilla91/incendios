@@ -304,9 +304,10 @@ const scarInfoEl = document.getElementById('scar-info');
 const deptInfoEl = document.getElementById('dept-info');
 let   scarDataSource  = null;
 let   currentScarYear = 2024;
-let   _currentScarData    = null;
-let   _casosAlertaData    = null;
-let   _lastClaudeAnalysis = null;
+let   _currentScarData        = null;
+let   _currentRecurrenciaData = null;
+let   _casosAlertaData        = null;
+let   _lastClaudeAnalysis     = null;
 const deptHoverMap    = new Map(); // entity.id → nombre del departamento
 const loteoInfoEl     = document.getElementById('loteo-info');
 let   loteosDataSource = null;
@@ -455,6 +456,17 @@ tapHandler.setInputAction((click) => {
     scarInfoEl.style.display  = 'none';
     loteoInfoEl.style.display = 'none';
     osmInfoEl.style.display   = 'none';
+    const rd = recurrenciaMap.get(recurrenciaPick2.id.id);
+    if (rd) {
+      _currentRecurrenciaData = rd;
+      recurrenciaInfoEl.innerHTML =
+        `<strong style="color:${recurrenciaColor(rd.veces)}">&#128293; Zona de alta recurrencia</strong>` +
+        `<br><small>Quemada <strong>${rd.veces} veces</strong> entre 2018–2025<br>~${rd.area_ha} ha</small>` +
+        `<br><button class="ai-btn" onclick="openClaudePanelRecurrencia()" style="margin-top:6px">🤖 Analizar con IA</button>`;
+      recurrenciaInfoEl.style.left    = x + 'px';
+      recurrenciaInfoEl.style.top     = y + 'px';
+      recurrenciaInfoEl.style.display = 'block';
+    }
   } else {
     scarInfoEl.style.display       = 'none';
     loteoInfoEl.style.display      = 'none';
@@ -1528,6 +1540,57 @@ function formatClaudeText(raw) {
 document.getElementById('claude-close-btn').addEventListener('click', () => {
   document.getElementById('claude-panel').style.display = 'none';
 });
+
+// ── Claude API · Análisis de zonas de recurrencia ────────────────────────────
+function openClaudePanelRecurrencia() {
+  if (!_currentRecurrenciaData) return;
+  const panel = document.getElementById('claude-panel');
+  panel.style.display = 'flex';
+  runClaudeAnalysisRecurrencia(_currentRecurrenciaData);
+}
+
+async function runClaudeAnalysisRecurrencia(rd) {
+  const content = document.getElementById('claude-content');
+  content.innerHTML = '<p class="claude-loading"></p>';
+  try {
+    const resp = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 500,
+        messages: [{ role: 'user', content: buildRecurrenciaPrompt(rd) }],
+      }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${resp.status}`);
+    }
+    const result = await resp.json();
+    const text   = result.content?.[0]?.text || '(sin respuesta)';
+    _lastClaudeAnalysis = text;
+    content.innerHTML = formatClaudeText(text);
+  } catch (e) {
+    content.innerHTML = `<p class="claude-error">Error: ${e.message}</p>`;
+  }
+}
+
+function buildRecurrenciaPrompt(rd) {
+  return `Sos un analista ambiental especializado en incendios en la provincia de Córdoba, Argentina.
+
+Se detectó una zona con recurrencia de incendios anómala:
+- Quemada exactamente ${rd.veces} veces entre 2018 y 2025 en el mismo lugar
+- Área aproximada: ${rd.area_ha} hectáreas
+
+Contexto: en Córdoba existe evidencia documentada de incendios intencionales para degradar bosque nativo protegido por la Ley 9814 (Ley de Bosques de Córdoba) y habilitar cambios ilegales de uso del suelo — principalmente loteos y emprendimientos inmobiliarios.
+
+Analizá brevemente estos tres puntos:
+**1. ¿Natural o intencional?** ¿Qué probabilidad hay de que ${rd.veces} incendios en el mismo lugar en 7 años sean casuales? ¿Qué patrones distinguen un incendio intencional recurrente de uno natural?
+**2. Marco legal** ¿Qué implica quemar repetidamente la misma zona en términos de la legislación ambiental de Córdoba? ¿Qué organismos deberían intervenir?
+**3. Qué investigar** ¿Qué debería documentarse o verificarse en campo para determinar si hubo intencionalidad?
+
+Sé directo. Máximo 3 oraciones por punto.`;
+}
 
 // ── Auto-refresh de datos en tiempo real ─────────────────────────────────────
 const REFRESH_FIRES_MS = 15 * 60 * 1000;  // focos FIRMS: cada 15 min
